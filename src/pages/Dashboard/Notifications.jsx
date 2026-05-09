@@ -2,14 +2,21 @@
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom'; 
-import { Bell, Check, X, MailOpen, Mail, MessageSquare, Briefcase } from 'lucide-react';
+import { Bell, Check, X, MailOpen, Mail, MessageSquare, Briefcase, BellOff } from 'lucide-react';
 
 const Notifications = () => {
-  const { invitations, projects, internships, users, updateInvitationStatus, toggleNotificationRead, resolveCourseRequest } = useData();
+  const { invitations, projects, internships, users, updateInvitationStatus, toggleNotificationRead, resolveCourseRequest, updateUser } = useData();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
 
-  const myNotifications = invitations.filter(inv => inv.receiverId === currentUser?.id);
+  // --- REQ 91: Handle Mute Toggle ---
+  const handleToggleMute = () => {
+    updateUser(currentUser.id, { notificationsMuted: !currentUser.notificationsMuted });
+  };
+
+  // --- REQ 91: Hide notifications if muted ---
+  const myNotifications = currentUser?.notificationsMuted ? [] : invitations.filter(inv => inv.receiverId === currentUser?.id);
+  
   const getProject = (id) => projects.find(p => p.id === id);
   const getInternship = (id) => internships.find(i => i.id === id);
   const getSender = (id) => users.find(u => u.id === id);
@@ -18,12 +25,36 @@ const Notifications = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-primary flex items-center">
-          <Bell className="w-6 h-6 mr-2" /> Notifications
+          {currentUser?.notificationsMuted ? <BellOff className="w-6 h-6 mr-2" /> : <Bell className="w-6 h-6 mr-2" />} 
+          Notifications
         </h2>
+        
+        {/* --- REQ 91: Turn Off Notifications Button --- */}
+        <button 
+          onClick={handleToggleMute}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm border ${
+            currentUser?.notificationsMuted 
+              ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100' 
+              : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+          }`}
+        >
+          {currentUser?.notificationsMuted ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+          {currentUser?.notificationsMuted ? 'Turn On Notifications' : 'Turn Off All Notifications'}
+        </button>
       </div>
 
       <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
-        {myNotifications.length === 0 ? (
+        {currentUser?.notificationsMuted ? (
+           <div className="text-center py-12 flex flex-col items-center">
+             <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4">
+               <BellOff className="w-8 h-8" />
+             </div>
+             <h3 className="text-lg font-bold text-gray-800">Notifications are turned off</h3>
+             <p className="text-sm text-gray-500 mt-1 max-w-sm">
+               You will not see any new alerts, requests, or messages here until you turn notifications back on.
+             </p>
+           </div>
+        ) : myNotifications.length === 0 ? (
           <p className="text-gray-500 text-center py-8">You have no new notifications.</p>
         ) : (
           <div className="space-y-4">
@@ -31,7 +62,7 @@ const Notifications = () => {
               const sender = getSender(notif.senderId);
               const isCourseReq = notif.type === 'course_request';
               const project = !isCourseReq && notif.projectId ? getProject(notif.projectId) : null;
-              const internship = notif.type === 'new_application' ? getInternship(notif.internshipId) : null;
+              const internship = notif.type === 'new_application' || notif.type === 'application_update' ? getInternship(notif.internshipId) : null;
 
               let messageText = null;
               if (notif.type === 'course_request') {
@@ -46,18 +77,20 @@ const Notifications = () => {
                  messageText = <><span className="font-bold">{sender?.firstName || sender?.companyName} {sender?.lastName || ''}</span> sent you a new private message.</>;
               } else if (notif.type === 'new_application') {
                  messageText = <><span className="font-bold">{sender?.firstName} {sender?.lastName}</span> submitted an application for your <span className="font-bold text-primary">{internship?.title}</span> position.</>;
+              } else if (notif.type === 'application_update') {
+                 messageText = <>Your application for the <span className="font-bold text-primary">{internship?.title}</span> role at <span className="font-bold">{internship?.companyName}</span> was <span className={`font-bold uppercase ${notif.appStatus === 'accepted' ? 'text-green-600' : 'text-red-600'}`}>{notif.appStatus}</span>.</>;
               } else {
                 messageText = <><span className="font-bold">{sender?.firstName} {sender?.lastName}</span> invited you to collaborate on <span className="font-bold text-primary">{project?.title}</span>.</>;
               }
 
               const isMsgOrFeedback = notif.type?.includes('feedback') || notif.type === 'new_message';
-              const isApplication = notif.type === 'new_application';
+              const isApplicationEvent = notif.type === 'new_application' || notif.type === 'application_update';
 
               return (
                 <div key={notif.id} className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors ${notif.read ? 'bg-white border-gray-100' : 'bg-blue-50 border-blue-100'}`}>
                   <div className="flex items-start gap-3 flex-1">
-                    <div className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isMsgOrFeedback ? 'bg-purple-100 text-purple-600' : isApplication ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}`}>
-                      {isMsgOrFeedback ? <MessageSquare className="w-4 h-4" /> : isApplication ? <Briefcase className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+                    <div className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isMsgOrFeedback ? 'bg-purple-100 text-purple-600' : isApplicationEvent ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}`}>
+                      {isMsgOrFeedback ? <MessageSquare className="w-4 h-4" /> : isApplicationEvent ? <Briefcase className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
                     </div>
 
                     <div>
@@ -96,7 +129,7 @@ const Notifications = () => {
                       {notif.read ? <Mail className="w-5 h-5" /> : <MailOpen className="w-5 h-5" />}
                     </button>
                     
-                    {notif.status === 'pending' && !isMsgOrFeedback && !isApplication && (
+                    {notif.status === 'pending' && !isMsgOrFeedback && !isApplicationEvent && (
                       <>
                         <button onClick={() => isCourseReq ? resolveCourseRequest(notif.id, 'accepted') : updateInvitationStatus(notif.id, 'accepted')} className="flex items-center bg-green-100 text-green-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors"><Check className="w-4 h-4 mr-1" /> Accept</button>
                         <button onClick={() => isCourseReq ? resolveCourseRequest(notif.id, 'rejected') : updateInvitationStatus(notif.id, 'rejected')} className="flex items-center bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors"><X className="w-4 h-4 mr-1" /> Reject</button>

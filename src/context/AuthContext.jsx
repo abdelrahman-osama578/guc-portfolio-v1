@@ -1,5 +1,5 @@
 // src/context/AuthContext.jsx
-import { createContext, useState, useContext } from 'react';
+import { createContext, useState, useContext, useEffect } from 'react';
 import { useData } from './DataContext';
 
 const AuthContext = createContext();
@@ -9,6 +9,17 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
   const { users } = useData();
   const [currentUser, setCurrentUser] = useState(null);
+
+  // --- THE FIX: Auto-sync currentUser with the main database ---
+  // If anything about this user changes in DataContext, instantly update their active session!
+  useEffect(() => {
+    if (currentUser) {
+      const freshUserData = users.find(u => u.id === currentUser.id);
+      if (freshUserData) {
+        setCurrentUser(freshUserData);
+      }
+    }
+  }, [users]);
 
   // Requirement 1: Login using email and password
   const login = (email, password) => {

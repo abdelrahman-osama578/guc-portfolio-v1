@@ -8,11 +8,11 @@ import { Link } from 'react-router-dom';
 const PortfolioList = () => {
   const { users, projects, courses, toggleFavorite, favorites } = useData();
   const { currentUser } = useAuth();
-  
-  const [activeTab, setActiveTab] = useState('Student'); 
+
+  const [activeTab, setActiveTab] = useState('Student');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterOption, setFilterOption] = useState(''); 
-  const [sortOption, setSortOption] = useState('most-projects'); 
+  const [filterOption, setFilterOption] = useState('');
+  const [sortOption, setSortOption] = useState('most-projects');
 
   const canSaveFavorites = currentUser?.role === 'Student' || currentUser?.role === 'Employer';
 
@@ -20,7 +20,7 @@ const PortfolioList = () => {
     setActiveTab(tab);
     setSearchQuery('');
     setFilterOption('');
-    setSortOption(tab === 'Student' ? 'most-projects' : 'name-asc'); 
+    setSortOption(tab === 'Student' ? 'most-projects' : 'name-asc');
   };
 
   const displayUsers = users.filter(u => u.role === activeTab);
@@ -31,12 +31,12 @@ const PortfolioList = () => {
 
   const filteredUsers = displayUsers.filter(user => {
     const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
-    const email = user.email?.toLowerCase() || ''; 
+    const email = user.email?.toLowerCase() || '';
     const query = searchQuery.toLowerCase();
-    
+
     const hasSkillMatch = user.skills?.some(skill => skill.toLowerCase().includes(query));
     const matchesSearch = fullName.includes(query) || email.includes(query) || (activeTab === 'Student' && hasSkillMatch);
-    
+
     let matchesFilter = true;
     if (filterOption) {
       if (activeTab === 'Student') {
@@ -45,7 +45,7 @@ const PortfolioList = () => {
         matchesFilter = user.linkedCourses?.includes(filterOption);
       }
     }
-    
+
     return matchesSearch && matchesFilter;
   });
 
@@ -66,15 +66,15 @@ const PortfolioList = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h2 className="text-2xl font-bold text-primary">University Directory</h2>
-        
+
         <div className="flex bg-gray-100 p-1 rounded-lg w-full md:w-auto">
-          <button 
+          <button
             onClick={() => handleTabSwitch('Student')}
             className={`flex-1 md:w-32 py-1.5 px-3 text-sm font-medium rounded-md transition-all ${activeTab === 'Student' ? 'bg-white shadow-sm text-primary' : 'text-gray-500 hover:text-primary'}`}
           >
             Students
           </button>
-          <button 
+          <button
             onClick={() => handleTabSwitch('Course Instructor')}
             className={`flex-1 md:w-32 py-1.5 px-3 text-sm font-medium rounded-md transition-all ${activeTab === 'Course Instructor' ? 'bg-white shadow-sm text-primary' : 'text-gray-500 hover:text-primary'}`}
           >
@@ -118,11 +118,11 @@ const PortfolioList = () => {
 
           return (
             <div key={user.id} className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-200 transition-all flex flex-col items-center text-center relative">
-              
+
               {/* REQ 65: Favorite Toggle Button for Portfolios */}
               {canSaveFavorites && user.id !== currentUser?.id && (
                 <div className="absolute top-4 right-4">
-                  <button 
+                  <button
                     onClick={(e) => { e.preventDefault(); toggleFavorite(currentUser.id, user.id, 'portfolio'); }}
                     className="p-2 bg-gray-50 rounded-full border border-gray-100 hover:bg-red-50 text-gray-400 hover:text-red-500 shadow-sm transition-all hover:scale-110"
                     title={isFav ? "Remove from favorites" : "Save to favorites"}
@@ -133,19 +133,19 @@ const PortfolioList = () => {
               )}
 
               <img src={user.profilePic} alt="Profile" className="w-20 h-20 rounded-full mb-4 border-2 border-gray-50 shadow-sm object-cover" />
-              
+
               <Link to={`/portfolios/${user.id}`}>
-                <h3 className="text-lg font-bold text-primary hover:text-blue-600 hover:underline transition-colors">
+                <h3 className="text-lg font-bold text-primary hover:text-blue-600 transition-colors">
                   {user.firstName} {user.lastName}
                 </h3>
               </Link>
-              
+
               {activeTab === 'Student' ? (
                 <p className="text-sm text-gray-500 mb-2 mt-1">{user.major || 'No Major Set'}</p>
               ) : (
                 <p className="text-sm text-purple-600 mb-2 mt-1 font-medium">Instructor</p>
               )}
-              
+
               <div className="flex gap-2 mb-4 justify-center flex-wrap h-14 overflow-hidden">
                 {activeTab === 'Student' ? (
                   user.skills?.slice(0, 3).map(skill => <span key={skill} className="px-2 py-1 bg-gray-50 text-gray-600 rounded-md text-xs border border-gray-200">{skill}</span>)
@@ -163,7 +163,7 @@ const PortfolioList = () => {
                 ) : (
                   <span className="text-sm text-gray-500 font-medium">View Teaching Profile</span>
                 )}
-                
+
                 <Link to={`/portfolios/${user.id}`} className="flex items-center text-sm font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-600 hover:text-white transition-colors">
                   View <ArrowRight className="w-4 h-4 ml-1" />
                 </Link>

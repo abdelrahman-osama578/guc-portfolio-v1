@@ -1,20 +1,22 @@
 // src/pages/Portfolio/PortfolioDetail.jsx
+import SkillSphere from '../../components/portfolio/SkillSphere';
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { ArrowLeft, Edit3, Code, Globe, Mail, Folder, MapPin } from 'lucide-react';
+import { ArrowLeft, Edit3, Code, Globe, Mail, Folder, MapPin, Briefcase, Calendar } from 'lucide-react';
 
 const PortfolioDetail = () => {
   const { id } = useParams();
-  const { users, projects, courses, updateUser, invitations, sendCourseRequest } = useData();
+  // --- REQ 90: Bring in internships and applications from useData ---
+  const { users, projects, courses, updateUser, invitations, sendCourseRequest, internships, applications } = useData();
   const { currentUser } = useAuth();
 
   const profileUser = users.find(u => u.id === parseInt(id));
   const isOwnProfile = currentUser?.id === profileUser?.id;
 
   const [isEditing, setIsEditing] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState(''); // <-- FIX: State added here!
+  const [selectedCourse, setSelectedCourse] = useState(''); 
   
   const [editForm, setEditForm] = useState({
     major: profileUser?.major || '',
@@ -31,11 +33,16 @@ const PortfolioDetail = () => {
 
   if (!profileUser) return <div className="p-8 text-center text-gray-500">Portfolio not found.</div>;
 
-  // FIXED FILTER
   const displayProjects = projects.filter(p => {
     if (p.creatorId !== profileUser.id) return false;
     return isOwnProfile || p.visibility === 'public';
   });
+
+  // --- REQ 90: Automatically extract completed (accepted) internships ---
+  const completedInternships = applications
+    .filter(app => app.studentId === profileUser.id && app.status === 'accepted')
+    .map(app => internships.find(i => i.id === app.internshipId))
+    .filter(Boolean); // Filter out any undefined matches
 
   const handleSaveProfile = (e) => {
     e.preventDefault();
@@ -84,13 +91,14 @@ const PortfolioDetail = () => {
 
           {/* Role Specific Sidebar Info */}
           {profileUser.role === 'Student' && (
-            <div className="w-full text-left">
-              <h4 className="font-bold text-sm text-primary mb-2">Skills</h4>
-              <div className="flex flex-wrap gap-2">
-                {profileUser.skills?.map(skill => (
-                  <span key={skill} className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium border border-gray-200">{skill}</span>
-                ))}
-              </div>
+            <div className="w-full text-left mt-2">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 text-center">
+                Interactive Skill Galaxy
+              </p>
+              <SkillSphere skills={profileUser.skills} />
+              <p className="text-[10px] text-gray-400 text-center mt-2 italic">
+                Drag to rotate • Hover to inspect
+              </p>
             </div>
           )}
 
@@ -186,7 +194,7 @@ const PortfolioDetail = () => {
             </div>
           )}
 
-          {/* Linked Courses Management for Instructors (Req 7) */}
+          {/* Linked Courses Management for Instructors */}
           {profileUser.role === 'Course Instructor' && (
             <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 mt-6">
               <h3 className="text-lg font-bold text-primary mb-4">Linked Courses</h3>
@@ -224,7 +232,7 @@ const PortfolioDetail = () => {
                       onClick={() => {
                         if(selectedCourse) {
                           sendCourseRequest(currentUser.id, selectedCourse, 'link');
-                          setSelectedCourse(''); // Reset the dropdown after clicking!
+                          setSelectedCourse(''); 
                         } else {
                           alert("Please select a course first.");
                         }
@@ -239,30 +247,61 @@ const PortfolioDetail = () => {
             </div>
           )}
 
-          {/* Project Showcase (Only really relevant for students) */}
+          {/* --- REQ 90: Internship Experience Section for Students --- */}
+          {profileUser.role === 'Student' && completedInternships.length > 0 && (
+            <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
+              <h3 className="text-lg font-bold text-primary mb-6 flex items-center">
+                <Briefcase className="w-5 h-5 mr-2 text-orange-500" /> Internship Experience
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {completedInternships.map(internship => (
+                  <div key={internship.id} className="p-5 border border-gray-100 rounded-xl bg-gray-50 flex items-start gap-4">
+                    <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center shrink-0">
+                      <Briefcase className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-primary text-sm line-clamp-1">{internship.title}</h4>
+                      <p className="text-xs font-bold text-blue-600 mt-1">{internship.companyName}</p>
+                      <p className="text-[10px] text-gray-500 mt-1.5 uppercase tracking-wider font-bold flex items-center">
+                        <Calendar className="w-3 h-3 mr-1" /> {internship.duration}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Project Showcase */}
           {profileUser.role === 'Student' && (
             <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
-              <h3 className="text-lg font-bold text-primary mb-6">Project Showcase</h3>
+              <h3 className="text-lg font-bold text-primary mb-6 flex items-center">
+                <Folder className="w-5 h-5 mr-2 text-blue-500" /> Project Showcase
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {displayProjects.map(project => {
-                  const course = courses.find(c => c.id === project.courseId);
-                  return (
-                    <div key={project.id} className="p-5 border border-gray-100 rounded-xl hover:shadow-md transition-shadow bg-gray-50">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 bg-white border border-gray-200 text-blue-600 rounded-lg flex items-center justify-center"><Folder className="w-5 h-5" /></div>
-                        <div>
-                          <Link to={`/projects/${project.id}`} className="font-bold text-primary hover:text-blue-600 hover:underline">{project.title}</Link>
-                          <p className="text-xs text-gray-500">{course?.name}</p>
+                {displayProjects.length === 0 ? (
+                   <p className="text-sm text-gray-500 italic">No public projects available.</p>
+                ) : (
+                  displayProjects.map(project => {
+                    const course = courses.find(c => c.id === project.courseId);
+                    return (
+                      <div key={project.id} className="p-5 border border-gray-100 rounded-xl hover:shadow-md transition-shadow bg-gray-50">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 bg-white border border-gray-200 text-blue-600 rounded-lg flex items-center justify-center"><Folder className="w-5 h-5" /></div>
+                          <div>
+                            <Link to={`/projects/${project.id}`} className="font-bold text-primary hover:text-blue-600 hover:underline">{project.title}</Link>
+                            <p className="text-xs text-gray-500">{course?.name}</p>
+                          </div>
                         </div>
+                        {project.githubLink && (
+                          <a href={project.githubLink} target="_blank" rel="noreferrer" className="text-xs text-gray-500 hover:text-primary flex items-center mt-4">
+                            <Code className="w-4 h-4 mr-1" /> View Repository
+                          </a>
+                        )}
                       </div>
-                      {project.githubLink && (
-                        <a href={project.githubLink} target="_blank" rel="noreferrer" className="text-xs text-gray-500 hover:text-primary flex items-center mt-4">
-                          <Code className="w-4 h-4 mr-1" /> View Repository
-                        </a>
-                      )}
-                    </div>
-                  )
-                })}
+                    )
+                  })
+                )}
               </div>
             </div>
           )}

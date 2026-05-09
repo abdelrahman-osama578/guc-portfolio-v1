@@ -3,38 +3,36 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { Plus, Archive, CheckCircle2, AlertCircle, Edit, Trash2, Star, Briefcase } from 'lucide-react'; 
+import { Plus, Archive, CheckCircle2, AlertCircle, Edit, Trash2, Star, Briefcase, Eye, X, Building2, Clock, Calendar, FileText, Code } from 'lucide-react'; 
 
 const ManageApplicants = () => {
-  const { internships, applications, users, projects, updateApplicationStatus, addInternship, updateInternship, deleteInternship, toggleInternshipStatus, toggleArchiveInternship, favorites, showToast } = useData();
+  // FIXED: Added confirmAction to this list!
+  const { internships, applications, users, projects, updateApplicationStatus, addInternship, updateInternship, deleteInternship, toggleInternshipStatus, toggleArchiveInternship, favorites, showToast, confirmAction } = useData();
   const { currentUser } = useAuth();
   const location = useLocation();
 
   const [showPostForm, setShowPostForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  
-  // Archiving Tab State (Req 78 Fix)
   const [viewArchived, setViewArchived] = useState(false);
+  
+  const [selectedInternship, setSelectedInternship] = useState(null);
   
   const [formData, setFormData] = useState({ 
     title: '', duration: '', deadline: '', skills: '', details: '', languages: '' 
   });
   
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [sortApplicants, setSortApplicants] = useState('default');
+  const [filterStatus, setFilterStatus] = useState({});
+  const [sortApplicants, setSortApplicants] = useState({});
 
-  // Trigger modal if clicking "Create" from Topbar
   useEffect(() => {
     if (location.state?.openCreate) {
       setShowPostForm(true);
-      // Clear history state so it doesn't instantly re-open if you refresh the page
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
 
-  // Separate internships into Active and Archived
   const displayedInternships = internships.filter(i => 
-    i.companyName === currentUser?.companyName && i.isArchived === viewArchived
+    i.companyName === currentUser?.companyName && (i.isArchived || false) === viewArchived
   );
 
   const getStudent = (studentId) => users.find(u => u.id === studentId);
@@ -68,6 +66,7 @@ const ManageApplicants = () => {
     });
     setEditingId(internship.id);
     setShowPostForm(true);
+    setSelectedInternship(null);
   };
 
   const handleArchiveClick = (internship) => {
@@ -88,7 +87,6 @@ const ManageApplicants = () => {
         </h2>
         
         <div className="flex items-center gap-4">
-          {/* Active / Archived Toggle */}
           <div className="flex bg-gray-100 p-1 rounded-lg">
             <button onClick={() => setViewArchived(false)} className={`py-1.5 px-4 text-sm font-bold rounded-md transition-all ${!viewArchived ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-primary'}`}>Active</button>
             <button onClick={() => setViewArchived(true)} className={`py-1.5 px-4 text-sm font-bold rounded-md transition-all ${viewArchived ? 'bg-white shadow-sm text-purple-600' : 'text-gray-500 hover:text-primary'}`}>Archived</button>
@@ -129,45 +127,53 @@ const ManageApplicants = () => {
       )}
 
       {displayedInternships.map(internship => {
+        const currentFilter = filterStatus[internship.id] || 'all';
+        const currentSort = sortApplicants[internship.id] || 'default';
+
         let internshipApps = applications.filter(app => app.internshipId === internship.id);
         
-        if (filterStatus === 'suggested') {
+        if (currentFilter === 'suggested') {
            internshipApps = internshipApps.filter(app => favorites.some(f => f.userId === currentUser.id && f.itemId === app.studentId && f.type === 'portfolio'));
-        } else if (filterStatus !== 'all') {
-           internshipApps = internshipApps.filter(app => app.status === filterStatus);
+        } else if (currentFilter !== 'all') {
+           internshipApps = internshipApps.filter(app => app.status === currentFilter);
         }
 
-        if (sortApplicants === 'top_contributors') {
+        if (currentSort === 'top_contributors') {
            internshipApps.sort((a, b) => getStudentProjectCount(b.studentId) - getStudentProjectCount(a.studentId));
         }
 
         return (
-          <div key={internship.id} className="bg-surface p-6 rounded-3xl shadow-sm border border-gray-100 mb-6 relative overflow-hidden">
+          <div key={internship.id} className="bg-surface p-6 rounded-3xl shadow-sm border border-gray-100 mb-6 relative overflow-hidden hover:shadow-md transition-shadow">
             {viewArchived && <div className="absolute top-0 left-0 w-full h-1 bg-purple-500"></div>}
             
             <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-gray-100 pb-4 mb-4 gap-4">
               <div>
-                <h3 className="text-xl font-bold text-primary flex items-center gap-3">
-                  {internship.title} 
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={() => setSelectedInternship(internship)}
+                    className="text-xl font-bold text-primary hover:text-blue-600 transition-colors text-left"
+                  >
+                    {internship.title}
+                  </button>
                   <span className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wider ${internship.status === 'hiring' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}>
                     {internship.status}
                   </span>
-                </h3>
+                </div>
                 <p className="text-xs font-bold text-red-500 uppercase tracking-wider mt-2">Deadline: {internship.deadline}</p>
               </div>
               
               <div className="flex flex-wrap items-center gap-2">
                 {!viewArchived && (
                   <>
-                    <button onClick={() => handleEditClick(internship)} className="flex items-center text-xs font-bold bg-blue-50 text-blue-700 px-3 py-2 rounded-lg hover:bg-blue-100"><Edit className="w-4 h-4 mr-1"/> Edit</button>
-                    <button onClick={() => deleteInternship(internship.id)} className="flex items-center text-xs font-bold bg-red-50 text-red-700 px-3 py-2 rounded-lg hover:bg-red-100"><Trash2 className="w-4 h-4 mr-1"/> Delete</button>
-                    <button onClick={() => toggleInternshipStatus(internship.id)} className="flex items-center text-xs font-bold bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200">
+                    <button onClick={() => setSelectedInternship(internship)} className="flex items-center text-xs font-bold bg-blue-50 text-blue-700 px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors"><Eye className="w-4 h-4 mr-1"/> View</button>
+                    <button onClick={() => handleEditClick(internship)} className="flex items-center text-xs font-bold bg-gray-50 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"><Edit className="w-4 h-4 mr-1"/> Edit</button>
+                    <button onClick={() => deleteInternship(internship.id)} className="flex items-center text-xs font-bold bg-red-50 text-red-700 px-3 py-2 rounded-lg hover:bg-red-100 transition-colors"><Trash2 className="w-4 h-4 mr-1"/> Delete</button>
+                    <button onClick={() => toggleInternshipStatus(internship.id)} className="flex items-center text-xs font-bold bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors">
                       {internship.status === 'hiring' ? <><CheckCircle2 className="w-4 h-4 mr-1"/> Mark Filled</> : <><AlertCircle className="w-4 h-4 mr-1"/> Reopen</>}
                     </button>
                   </>
                 )}
                 
-                {/* REQ 78: Archive / Unarchive Toggle */}
                 {viewArchived ? (
                   <button onClick={() => toggleArchiveInternship(internship.id)} className="flex items-center text-xs font-bold bg-green-50 text-green-700 px-3 py-2 rounded-lg hover:bg-green-100 transition-colors">
                     <Archive className="w-4 h-4 mr-1" /> Unarchive
@@ -183,7 +189,11 @@ const ManageApplicants = () => {
             <div className="flex flex-col sm:flex-row justify-between items-center mb-4 bg-gray-50 p-3 rounded-xl border border-gray-100 gap-3">
               <span className="text-sm font-bold text-gray-700">Applicants ({internshipApps.length})</span>
               <div className="flex flex-wrap gap-2">
-                <select className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none font-medium" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                <select 
+                  className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none font-medium" 
+                  value={currentFilter} 
+                  onChange={(e) => setFilterStatus(prev => ({ ...prev, [internship.id]: e.target.value }))}
+                >
                   <option value="all">All Statuses</option>
                   <option value="suggested">🌟 Suggested (Favorites)</option>
                   <option value="pending">Pending</option>
@@ -191,7 +201,11 @@ const ManageApplicants = () => {
                   <option value="accepted">Accepted</option>
                   <option value="rejected">Rejected</option>
                 </select>
-                <select className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none font-medium text-blue-700 bg-blue-50" value={sortApplicants} onChange={(e) => setSortApplicants(e.target.value)}>
+                <select 
+                  className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none font-medium text-blue-700 bg-blue-50" 
+                  value={currentSort} 
+                  onChange={(e) => setSortApplicants(prev => ({ ...prev, [internship.id]: e.target.value }))}
+                >
                   <option value="default">Default Sort</option>
                   <option value="top_contributors">Sort: Top Contributors</option>
                 </select>
@@ -221,14 +235,25 @@ const ManageApplicants = () => {
                           </div>
                         </div>
                         <select 
-                          className={`text-[10px] font-bold px-3 py-1.5 rounded-full border outline-none tracking-wider uppercase
-                            ${app.status === 'pending' ? 'bg-yellow-50 text-yellow-600 border-yellow-200' : ''}
-                            ${app.status === 'nominated' ? 'bg-blue-50 text-blue-600 border-blue-200' : ''}
-                            ${app.status === 'accepted' ? 'bg-green-50 text-green-600 border-green-200' : ''}
-                            ${app.status === 'rejected' ? 'bg-red-50 text-red-600 border-red-200' : ''}
+                          className={`text-[10px] font-bold px-3 py-1.5 rounded-full border outline-none tracking-wider uppercase cursor-pointer transition-all
+                            ${app.status === 'pending' ? 'bg-yellow-50 text-yellow-600 border-yellow-200 hover:shadow-sm' : ''}
+                            ${app.status === 'nominated' ? 'bg-blue-50 text-blue-600 border-blue-200 hover:shadow-sm' : ''}
+                            ${app.status === 'accepted' ? 'bg-green-50 text-green-600 border-green-200 hover:shadow-sm' : ''}
+                            ${app.status === 'rejected' ? 'bg-red-50 text-red-600 border-red-200 hover:shadow-sm' : ''}
                           `}
                           value={app.status}
-                          onChange={(e) => updateApplicationStatus(app.id, e.target.value)}
+                          onChange={(e) => {
+                            const newStatus = e.target.value;
+                            if (newStatus === 'accepted' || newStatus === 'rejected') {
+                              confirmAction(
+                                `Are you sure you want to mark this applicant as ${newStatus.toUpperCase()}? This will instantly send an official notification to the student.`,
+                                `Yes, mark as ${newStatus}`,
+                                () => updateApplicationStatus(app.id, newStatus)
+                              );
+                            } else {
+                              updateApplicationStatus(app.id, newStatus);
+                            }
+                          }}
                         >
                           <option value="pending">Pending</option>
                           <option value="nominated">Nominated</option>
@@ -248,6 +273,83 @@ const ManageApplicants = () => {
           </div>
         );
       })}
+
+      {selectedInternship && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-2xl animate-in fade-in zoom-in duration-200 max-h-[90vh] flex flex-col">
+            
+            <div className="flex justify-between items-start mb-4 shrink-0 border-b border-gray-100 pb-4">
+              <div>
+                <h3 className="text-2xl font-bold text-primary mb-1">{selectedInternship.title}</h3>
+                <div className="flex items-center gap-3">
+                  <p className="text-sm font-bold text-blue-600 flex items-center">
+                    <Building2 className="w-4 h-4 mr-1" /> {selectedInternship.companyName}
+                  </p>
+                  <span className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wider ${selectedInternship.status === 'hiring' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}>
+                    {selectedInternship.status}
+                  </span>
+                </div>
+              </div>
+              <button onClick={() => setSelectedInternship(null)} className="p-2 bg-gray-50 hover:bg-red-50 text-gray-500 hover:text-red-500 rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="overflow-y-auto flex-1 pr-2 space-y-6">
+              
+              <div className="flex flex-wrap gap-4 text-sm font-medium bg-gray-50 p-4 rounded-xl border border-gray-100">
+                <div className="flex items-center text-gray-700"><Clock className="w-4 h-4 mr-2 text-gray-400" /> Duration: {selectedInternship.duration}</div>
+                <div className="flex items-center text-red-600"><Calendar className="w-4 h-4 mr-2 text-red-400" /> Deadline: {selectedInternship.deadline}</div>
+                <div className="flex items-center text-gray-500"><Calendar className="w-4 h-4 mr-2 text-gray-400" /> Posted: {selectedInternship.postedDate}</div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-bold text-gray-800 mb-2 flex items-center uppercase tracking-wider"><FileText className="w-4 h-4 mr-2 text-blue-500"/> Role Description</h4>
+                <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line bg-white border border-gray-100 p-4 rounded-xl">
+                  {selectedInternship.details || "No detailed description provided by the employer."}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-sm font-bold text-gray-800 mb-2 uppercase tracking-wider">Required Skills</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedInternship.skills?.map((skill, idx) => (
+                      <span key={idx} className="px-3 py-1 bg-purple-50 text-purple-700 rounded-lg text-xs font-bold border border-purple-100">{skill}</span>
+                    ))}
+                    {(!selectedInternship.skills || selectedInternship.skills.length === 0) && <span className="text-xs text-gray-400 italic">None specified</span>}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-gray-800 mb-2 flex items-center uppercase tracking-wider"><Code className="w-4 h-4 mr-1 text-gray-400"/> Languages</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedInternship.languages?.map((lang, idx) => (
+                      <span key={idx} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold border border-gray-200">{lang}</span>
+                    ))}
+                    {(!selectedInternship.languages || selectedInternship.languages.length === 0) && <span className="text-xs text-gray-400 italic">None specified</span>}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-gray-100 shrink-0 flex justify-end gap-2">
+               <button onClick={() => setSelectedInternship(null)} className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">
+                 Close
+               </button>
+               {!selectedInternship.isArchived && (
+                 <button 
+                   onClick={() => handleEditClick(selectedInternship)} 
+                   className="px-5 py-2.5 text-sm font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors shadow-sm flex items-center"
+                 >
+                   <Edit className="w-4 h-4 mr-2" /> Edit Internship
+                 </button>
+               )}
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

@@ -12,7 +12,7 @@ const ProjectDetail = () => {
     projects, courses, tasks, addTask, updateTask, deleteTask, users,
     updateProject, deleteProject, rateProject, projectComments, addProjectComment, updateProjectComment, deleteProjectComment, taskComments, addTaskComment,
     invitations, sendInvitation, deleteInvitation,
-    thesisDrafts, uploadThesisDraft, setFinalDraft, showToast, flagProject, submitAppeal
+    thesisDrafts, uploadThesisDraft, setFinalDraft, showToast, flagProject, submitAppeal, confirmAction // <-- IMPORTED confirmAction
   } = useData();
   const { currentUser } = useAuth();
 
@@ -137,12 +137,17 @@ const ProjectDetail = () => {
     if (showToast) showToast("Project updated successfully!");
   };
 
+  // --- REQ: Updated to use Global Confirmation Dialog ---
   const handleDeleteProject = () => {
-    if (window.confirm("Are you sure you want to completely delete this project? This action cannot be undone.")) {
-      deleteProject(project.id);
-      navigate('/projects');
-      if (showToast) showToast("Project deleted.", "error");
-    }
+    confirmAction(
+      "Are you sure you want to completely delete this project? This action cannot be undone.",
+      "Delete Project",
+      () => {
+        deleteProject(project.id);
+        navigate('/projects');
+        if (showToast) showToast("Project deleted.", "error");
+      }
+    );
   };
 
   const handleAddTask = (e) => {
@@ -244,7 +249,7 @@ const ProjectDetail = () => {
                   <button onClick={handleDeleteProject} className="flex items-center text-xs font-bold bg-red-50 text-red-700 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-colors"><Trash2 className="w-3.5 h-3.5 mr-1" /> Delete</button>
                 </>
               )}
-              {/* REQ 59: Flag Button */}
+              {/* Flag Button */}
               {(currentUser?.role === 'Administrator' || currentUser?.role === 'Course Instructor') && !project.isFlagged && (
                 <button onClick={() => setShowFlagModal(true)} className="flex items-center text-xs font-bold bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100 transition-colors">
                   <Flag className="w-3.5 h-3.5 mr-1" /> Flag Project
@@ -322,7 +327,7 @@ const ProjectDetail = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
 
-          {/* REQ 61: Dynamic Appeal Banner */}
+          {/* Dynamic Appeal Banner */}
           {project.isFlagged && isCreator && (
             <div className={`p-5 rounded-2xl shadow-sm border ${project.appealMessage ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200'}`}>
               <h3 className={`${project.appealMessage ? 'text-yellow-700' : 'text-red-700'} font-bold flex items-center text-lg`}>
@@ -519,7 +524,12 @@ const ProjectDetail = () => {
                           <button onClick={() => { setEditingProjCommentId(c.id); setEditProjCommentText(c.text); }} className="text-blue-500 hover:text-blue-700 p-1" title="Edit">
                             <Edit className="w-3.5 h-3.5" />
                           </button>
-                          <button onClick={() => { if (window.confirm("Delete this feedback?")) deleteProjectComment(c.id); }} className="text-red-500 hover:text-red-700 p-1" title="Delete">
+                          {/* --- REQ: Updated to use Global Confirmation Dialog --- */}
+                          <button 
+                            onClick={() => confirmAction("Are you sure you want to delete this feedback?", "Delete", () => deleteProjectComment(c.id))} 
+                            className="text-red-500 hover:text-red-700 p-1" 
+                            title="Delete"
+                          >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>

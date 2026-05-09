@@ -1,5 +1,5 @@
 // src/components/layout/Topbar.jsx
-import { Search, Bell, MessageSquare, Plus } from 'lucide-react'; 
+import { Search, Bell, MessageSquare, Plus, BellOff } from 'lucide-react'; 
 import { Link, useNavigate } from 'react-router-dom'; 
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -10,7 +10,9 @@ const Topbar = () => {
   const navigate = useNavigate(); 
 
   const unreadMessages = messages.filter(m => m.receiverId === currentUser?.id && !m.read).length;
-  const unreadNotifications = invitations.filter(inv => inv.receiverId === currentUser?.id && !inv.read).length; 
+  
+  // REQ 91: Hide notification badge if muted
+  const unreadNotifications = currentUser?.notificationsMuted ? 0 : invitations.filter(inv => inv.receiverId === currentUser?.id && !inv.read).length; 
 
   const handleSearch = (e) => {
     if (e.key === 'Enter' && e.target.value) {
@@ -24,7 +26,6 @@ const Topbar = () => {
 
   const handleCreateClick = () => {
     if (currentUser?.role === 'Employer') {
-      // Pass state to automatically pop open the modal!
       navigate('/manage-applicants', { state: { openCreate: true } }); 
     } else {
       navigate('/projects'); 
@@ -53,7 +54,8 @@ const Topbar = () => {
 
         <div className="flex items-center space-x-3">
           <Link to="/notifications" className="p-2 bg-white rounded-full border border-gray-200 text-gray-500 hover:text-primary hover:shadow-sm transition-all relative">
-            <Bell className="w-5 h-5" />
+            {/* REQ 91: Change bell icon if muted */}
+            {currentUser?.notificationsMuted ? <BellOff className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
             {unreadNotifications > 0 && (
               <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 border-2 border-white rounded-full"></span>
             )}

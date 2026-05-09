@@ -27,11 +27,27 @@ export const DataProvider = ({ children }) => {
   const [favorites, setFavorites] = useState(initialFavorites);
   const [messages, setMessages] = useState(initialMessages);
   const [thesisDrafts, setThesisDrafts] = useState(initialThesisDrafts);
+  
+  // --- UI STATES ---
   const [toast, setToast] = useState(null); 
+  const [confirmDialog, setConfirmDialog] = useState(null); // REQ: Custom Confirmation Modal
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
+  };
+
+  // --- REQ: Custom Confirmation Function ---
+  const confirmAction = (message, confirmText = "Confirm", onConfirmCallback) => {
+    setConfirmDialog({
+      message,
+      confirmText,
+      onConfirm: () => {
+        onConfirmCallback();
+        setConfirmDialog(null);
+      },
+      onCancel: () => setConfirmDialog(null)
+    });
   };
 
   const addUser = (newUser) => setUsers([...users, { ...newUser, id: users.length + 1 }]);
@@ -129,7 +145,6 @@ export const DataProvider = ({ children }) => {
   const updateProjectComment = (id, newText) => setProjectComments(projectComments.map(c => c.id === id ? { ...c, text: newText } : c));
   const deleteProjectComment = (id) => setProjectComments(projectComments.filter(c => c.id !== id));
 
-  // --- REQ 74 & 78: INTERNSHIP CRUD ---
   const addInternship = (i) => {
     const localDate = new Date().toLocaleDateString('en-CA');
     setInternships([...internships, { ...i, id: `i${Date.now()}`, postedDate: localDate, status: 'hiring', isArchived: false }]);
@@ -146,11 +161,9 @@ export const DataProvider = ({ children }) => {
   const toggleInternshipStatus = (id) => setInternships(internships.map(i => i.id === id ? { ...i, status: i.status === 'hiring' ? 'filled' : 'hiring' } : i));
   const toggleArchiveInternship = (id) => setInternships(internships.map(i => i.id === id ? { ...i, isArchived: !i.isArchived } : i));
 
-  // Application logic + Notification to Employer
+  // --- REQ 89: Application logic + Notification to Employer & Student ---
   const addApplication = (a) => {
     setApplications([...applications, { ...a, id: `app${Date.now()}`, status: 'pending' }]);
-    
-    // Notify the Employer
     const internship = internships.find(i => i.id === a.internshipId);
     const employer = users.find(u => u.companyName === internship?.companyName);
     if (employer) {
@@ -161,7 +174,21 @@ export const DataProvider = ({ children }) => {
     }
     if (showToast) showToast("Application submitted successfully!");
   };
-  const updateApplicationStatus = (id, s) => setApplications(applications.map(a => a.id === id ? { ...a, status: s } : a));
+  const updateApplicationStatus = (id, s) => {
+    setApplications(applications.map(a => a.id === id ? { ...a, status: s } : a));
+    if (s === 'accepted' || s === 'rejected') {
+      const app = applications.find(a => a.id === id);
+      if (app) {
+        const internship = internships.find(i => i.id === app.internshipId);
+        const employer = users.find(u => u.companyName === internship?.companyName);
+        setInvitations(prev => [...prev, {
+          id: `notif${Date.now()}_${Math.random()}`, type: 'application_update', internshipId: internship?.id,
+          senderId: employer?.id || 3, receiverId: app.studentId, status: 'info', appStatus: s, read: false
+        }]);
+        if (showToast) showToast(`Applicant ${s} and notified!`, s === 'accepted' ? 'success' : 'info');
+      }
+    }
+  };
 
   const sendInvitation = (pId, sId, rId) => {
     const alreadyInvited = invitations.some(i => i.projectId === pId && i.receiverId === rId);
@@ -240,7 +267,8 @@ export const DataProvider = ({ children }) => {
       sendCourseRequest, resolveCourseRequest,
       favorites, toggleFavorite, 
       messages, sendMessage, markMessagesRead, markMessageNotificationsRead,
-      toast, showToast
+      toast, showToast,
+      confirmDialog, confirmAction // <-- NEW MODAL STATE EXPORTED
     }}>
       {children}
     </DataContext.Provider>

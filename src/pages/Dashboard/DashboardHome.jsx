@@ -17,6 +17,9 @@ const DashboardHome = () => {
 
   const activeCollaborations = invitations?.filter(inv => (inv.senderId === currentUser?.id || inv.receiverId === currentUser?.id) && inv.status === 'accepted').length || 0;
 
+  // REQ 89+: Get student's applications for the dashboard tracker
+  const myApplications = applications.filter(app => app.studentId === currentUser?.id);
+
   const getLanguageStats = () => {
     const allLanguages = userProjects.flatMap(p => p.languages || []);
     if (allLanguages.length === 0) return { top: 'None', breakdown: [] };
@@ -134,39 +137,87 @@ const DashboardHome = () => {
         <div className="lg:col-span-2 space-y-6">
           
           {currentUser?.role === 'Student' && (
-            <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-primary">Recent Projects</h3>
-                <Link to="/projects" className="text-sm font-bold text-blue-600 hover:underline flex items-center">
-                  View all <ArrowUpRight className="w-4 h-4 ml-1" />
-                </Link>
+            <>
+              {/* --- NEW: MY APPLICATIONS TRACKER --- */}
+              <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-primary flex items-center">
+                    <Briefcase className="w-5 h-5 mr-2 text-blue-600" /> My Applications
+                  </h3>
+                  <Link to="/internships" className="text-sm font-bold text-blue-600 hover:underline flex items-center">
+                    Explore Internships <ArrowUpRight className="w-4 h-4 ml-1" />
+                  </Link>
+                </div>
+                
+                <div className="space-y-4">
+                  {myApplications.length > 0 ? (
+                    myApplications.map(app => {
+                      const internship = internships.find(i => i.id === app.internshipId);
+                      if (!internship) return null;
+                      
+                      return (
+                        <div key={app.id} className="flex items-center justify-between p-4 bg-gray-50 hover:bg-white rounded-2xl transition-colors border border-transparent hover:border-gray-200 hover:shadow-sm">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-10 h-10 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center">
+                              <Briefcase className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-primary text-sm leading-tight">{internship.title}</h4>
+                              <p className="text-xs font-bold text-gray-500 mt-0.5">{internship.companyName}</p>
+                            </div>
+                          </div>
+                          <span className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border 
+                            ${app.status === 'pending' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : ''}
+                            ${app.status === 'nominated' ? 'bg-blue-100 text-blue-700 border-blue-200' : ''}
+                            ${app.status === 'accepted' ? 'bg-green-100 text-green-700 border-green-200' : ''}
+                            ${app.status === 'rejected' ? 'bg-red-100 text-red-700 border-red-200' : ''}
+                          `}>
+                            {app.status}
+                          </span>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="text-sm text-gray-500 text-center py-6 border border-dashed rounded-2xl">You haven't applied to any internships yet.</p>
+                  )}
+                </div>
               </div>
-              
-              <div className="space-y-4">
-                {userProjects.length > 0 ? (
-                  userProjects.slice(-3).reverse().map(project => (
-                    <div key={project.id} className="flex items-center justify-between p-4 bg-gray-50 hover:bg-white rounded-2xl transition-colors border border-transparent hover:border-gray-200 hover:shadow-sm">
-                      <div className="flex items-center space-x-4">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${project.creatorId === currentUser?.id ? 'bg-white shadow-sm text-gray-500' : 'bg-purple-100 text-purple-600'}`}>
-                          {project.creatorId === currentUser?.id ? <Folder className="w-6 h-6" /> : <Users className="w-6 h-6" />}
+
+              {/* RECENT PROJECTS */}
+              <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-primary">Recent Projects</h3>
+                  <Link to="/projects" className="text-sm font-bold text-blue-600 hover:underline flex items-center">
+                    View all <ArrowUpRight className="w-4 h-4 ml-1" />
+                  </Link>
+                </div>
+                
+                <div className="space-y-4">
+                  {userProjects.length > 0 ? (
+                    userProjects.slice(-3).reverse().map(project => (
+                      <div key={project.id} className="flex items-center justify-between p-4 bg-gray-50 hover:bg-white rounded-2xl transition-colors border border-transparent hover:border-gray-200 hover:shadow-sm">
+                        <div className="flex items-center space-x-4">
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${project.creatorId === currentUser?.id ? 'bg-white shadow-sm text-gray-500' : 'bg-purple-100 text-purple-600'}`}>
+                            {project.creatorId === currentUser?.id ? <Folder className="w-6 h-6" /> : <Users className="w-6 h-6" />}
+                          </div>
+                          <div>
+                            <Link to={`/projects/${project.id}`}>
+                              <h4 className="font-bold text-primary hover:text-blue-600 transition-colors text-lg leading-tight">{project.title}</h4>
+                            </Link>
+                            <p className="text-xs font-bold text-gray-400 mt-1 uppercase tracking-wider">{project.creationDate}</p>
+                          </div>
                         </div>
-                        <div>
-                          <Link to={`/projects/${project.id}`}>
-                            <h4 className="font-bold text-primary hover:text-blue-600 transition-colors text-lg leading-tight">{project.title}</h4>
-                          </Link>
-                          <p className="text-xs font-bold text-gray-400 mt-1 uppercase tracking-wider">{project.creationDate}</p>
-                        </div>
+                        <span className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${project.visibility === 'public' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-200 text-gray-600 border-gray-300'}`}>
+                          {project.visibility}
+                        </span>
                       </div>
-                      <span className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${project.visibility === 'public' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-200 text-gray-600 border-gray-300'}`}>
-                        {project.visibility}
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-gray-500 text-center py-8 border border-dashed rounded-2xl">No projects yet. Start building!</p>
-                )}
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500 text-center py-8 border border-dashed rounded-2xl">No projects yet. Start building!</p>
+                  )}
+                </div>
               </div>
-            </div>
+            </>
           )}
 
           {isAdmin && (
