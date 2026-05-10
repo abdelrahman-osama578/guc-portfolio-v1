@@ -56,6 +56,7 @@ export const initialUsers = [
 
 ];
 
+
 export const initialCourses = [
   { id: "c1", code: "CSEN701", name: "Software Engineering" },
   { id: "c2", code: "CSEN702", name: "Advanced Computer Networks" },
@@ -88,7 +89,19 @@ export const initialInternships = [
     deadline: "2026-06-01",
     postedDate: "2026-05-01",
     status: "hiring"
-  }
+  },
+  {
+      id: 999, // Make sure this doesn't conflict with your other IDs
+      title: "Legacy React Developer (Test Archive)",
+      companyName: "TechCorp", 
+      postedDate: "2026-03-01",
+      deadline: "2026-04-15", // THIS IS IN THE PAST
+      location: "Cairo, Egypt",
+      type: "Part-time",
+      description: "This is a test internship. Because the deadline has already passed, your system should automatically mark this as archived or filter it out of the active job board.",
+      requirements: ["React", "JavaScript", "Time Travel"],
+      status: "active" // Leave it as 'active' to test if your frontend logic automatically catches the expired date!
+    }
 ];
 
 export const initialTasks = [
