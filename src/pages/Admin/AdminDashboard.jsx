@@ -2,16 +2,19 @@
 import { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { Users, Folder, BookOpen, Check, X, AlertTriangle, Plus, Trash2, ShieldAlert, Download, Eye, FileText, MapPin, Phone, Info, Edit } from 'lucide-react'; 
-
+import { Users, Folder, BookOpen, Check, X, AlertTriangle, Plus, Trash2, ShieldAlert, Download, Eye, FileText, MapPin, Phone, Info, Link2, Unlink, Edit } from 'lucide-react';
 const AdminDashboard = () => {
-  const { users, projects, courses, updateUserStatus, resolveFlag, toggleUserActiveStatus, addCourse, updateCourse, deleteCourse, addUser, showToast, toggleProjectStatus } = useData(); 
+  // FIXED: Brought in invitations and resolveCourseRequest
+  const { users, projects, courses, updateUserStatus, resolveFlag, toggleUserActiveStatus, addCourse, updateCourse, deleteCourse, addUser, showToast, toggleProjectStatus, invitations, resolveCourseRequest } = useData(); 
   const { currentUser } = useAuth();
   
   const flaggedProjects = projects.filter(p => p.isFlagged);
   const pendingEmployers = users.filter(u => u.role === 'Employer' && u.status === 'pending_admin_approval');
   const systemUsers = users.filter(u => u.status !== 'pending_admin_approval');
   
+  // --- NEW: Filter for pending course requests ---
+  const pendingCourseRequests = invitations.filter(inv => inv.type === 'course_request' && inv.status === 'pending');
+
   const [newCourseCode, setNewCourseCode] = useState('');
   const [newCourseName, setNewCourseName] = useState('');
   const [editingCourseId, setEditingCourseId] = useState(null);
@@ -28,34 +31,39 @@ const AdminDashboard = () => {
         const base64Parts = pdfData.split(',');
         const binaryString = window.atob(base64Parts[1]);
         const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
+        for (let i = 0; i < binaryString.length; i++) { bytes[i] = binaryString.charCodeAt(i); }
         const blob = new Blob([bytes], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-        setViewingPdf(url);
-      } catch (err) {
-        setViewingPdf(pdfData); 
-      }
-    } else {
-      setViewingPdf(pdfData);
-    }
+        setViewingPdf(URL.createObjectURL(blob));
+      } catch (err) { setViewingPdf(pdfData); }
+    } else { setViewingPdf(pdfData); }
   };
 
   const handleAddCourse = (e) => {
     e.preventDefault();
     if(newCourseCode && newCourseName) {
-      addCourse(newCourseCode, newCourseName);
+      const formattedCode = newCourseCode.trim().toUpperCase();
+      const formattedName = newCourseName.trim();
+      if (courses.some(c => c.code.toUpperCase() === formattedCode)) {
+        if (showToast) showToast(`Error: The course code "${formattedCode}" already exists.`, "error");
+        return; 
+      }
+      addCourse(formattedCode, formattedName);
       setNewCourseCode(''); setNewCourseName('');
-      if(showToast) showToast("Course added successfully!");
+      if(showToast) showToast("Course added successfully!", "success");
     }
   };
 
   const handleSaveEditCourse = (id) => {
     if(editCourseCode && editCourseName) {
-      updateCourse(id, editCourseCode, editCourseName);
+      const formattedCode = editCourseCode.trim().toUpperCase();
+      const formattedName = editCourseName.trim();
+      if (courses.some(c => c.code.toUpperCase() === formattedCode && c.id !== id)) {
+        if (showToast) showToast(`Error: The course code "${formattedCode}" already exists.`, "error");
+        return; 
+      }
+      updateCourse(id, formattedCode, formattedName);
       setEditingCourseId(null);
-      if(showToast) showToast("Course updated successfully!");
+      if(showToast) showToast("Course updated successfully!", "success");
     }
   };
 
@@ -63,10 +71,8 @@ const AdminDashboard = () => {
     e.preventDefault();
     if(newAdminEmail && newAdminPassword) {
       addUser({
-        firstName: "New", lastName: "Admin",
-        email: newAdminEmail, password: newAdminPassword,
-        role: "Administrator", status: "active",
-        profilePic: "https://ui-avatars.com/api/?name=Admin"
+        firstName: "New", lastName: "Admin", email: newAdminEmail, password: newAdminPassword,
+        role: "Administrator", status: "active", profilePic: "https://ui-avatars.com/api/?name=Admin"
       });
       setNewAdminEmail(''); setNewAdminPassword('');
       if(showToast) showToast("New Admin account created!");
@@ -94,47 +100,82 @@ const AdminDashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* Pending Employers */}
-        <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold text-primary mb-4">Pending Employer Approvals</h3>
-          <div className="space-y-4">
-            {pendingEmployers.length === 0 ? <p className="text-sm text-gray-500">No pending approvals.</p> : (
-              pendingEmployers.map(emp => (
-                <div key={emp.id} className="p-5 border border-gray-100 rounded-xl bg-gray-50 shadow-sm">
-                  <div className="flex justify-between items-start mb-4">
-                     <div className="w-full">
-                       <span className="text-[10px] font-bold tracking-wider text-gray-400 uppercase mb-1 block">Company Registration Info</span>
-                       <h4 className="font-bold text-primary text-lg">{emp.companyName}</h4>
-                       <p className="text-sm text-blue-600 font-medium mb-3"><a href={`mailto:${emp.email}`} className="hover:underline">{emp.email}</a></p>
-                       <div className="space-y-2 bg-white p-3 rounded-lg border border-gray-100 mb-3">
-                         {emp.bio && <p className="text-sm text-gray-600 flex items-start"><Info className="w-4 h-4 mr-2 mt-0.5 text-gray-400 shrink-0"/> {emp.bio}</p>}
-                         {emp.contactInfo && <p className="text-sm text-gray-600 flex items-center"><Phone className="w-4 h-4 mr-2 text-gray-400 shrink-0"/> {emp.contactInfo}</p>}
-                         {emp.address && <p className="text-sm text-gray-600 flex items-start"><MapPin className="w-4 h-4 mr-2 mt-0.5 text-red-400 shrink-0"/> {emp.address}</p>}
-                         {!emp.bio && !emp.contactInfo && !emp.address && <p className="text-xs text-gray-400 italic">No additional profile details provided yet.</p>}
+        <div className="space-y-6">
+          {/* Pending Employers */}
+          <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
+            <h3 className="text-lg font-bold text-primary mb-4">Pending Employer Approvals</h3>
+            <div className="space-y-4">
+              {pendingEmployers.length === 0 ? <p className="text-sm text-gray-500">No pending approvals.</p> : (
+                pendingEmployers.map(emp => (
+                  <div key={emp.id} className="p-5 border border-gray-100 rounded-xl bg-gray-50 shadow-sm">
+                    <div className="flex justify-between items-start mb-4">
+                       <div className="w-full">
+                         <span className="text-[10px] font-bold tracking-wider text-gray-400 uppercase mb-1 block">Company Registration Info</span>
+                         <h4 className="font-bold text-primary text-lg">{emp.companyName}</h4>
+                         <p className="text-sm text-blue-600 font-medium mb-3"><a href={`mailto:${emp.email}`} className="hover:underline">{emp.email}</a></p>
+                         <div className="space-y-2 bg-white p-3 rounded-lg border border-gray-100 mb-3">
+                           {emp.bio && <p className="text-sm text-gray-600 flex items-start"><Info className="w-4 h-4 mr-2 mt-0.5 text-gray-400 shrink-0"/> {emp.bio}</p>}
+                           {emp.contactInfo && <p className="text-sm text-gray-600 flex items-center"><Phone className="w-4 h-4 mr-2 text-gray-400 shrink-0"/> {emp.contactInfo}</p>}
+                           {emp.address && <p className="text-sm text-gray-600 flex items-start"><MapPin className="w-4 h-4 mr-2 mt-0.5 text-red-400 shrink-0"/> {emp.address}</p>}
+                           {!emp.bio && !emp.contactInfo && !emp.address && <p className="text-xs text-gray-400 italic">No additional profile details provided yet.</p>}
+                         </div>
                        </div>
-                     </div>
-                     <div className="flex gap-2 ml-4">
-                       <button onClick={() => { updateUserStatus(emp.id, 'active'); if(showToast) showToast("Employer Approved!"); }} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 shadow-sm transition-transform hover:scale-105" title="Approve"><Check className="w-5 h-5"/></button>
-                       <button onClick={() => { updateUserStatus(emp.id, 'rejected'); if(showToast) showToast("Employer Rejected.", "error"); }} className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 shadow-sm transition-transform hover:scale-105" title="Reject"><X className="w-5 h-5"/></button>
-                     </div>
+                       <div className="flex gap-2 ml-4">
+                         <button onClick={() => { updateUserStatus(emp.id, 'active'); if(showToast) showToast("Employer Approved!"); }} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 shadow-sm transition-transform hover:scale-105" title="Approve"><Check className="w-5 h-5"/></button>
+                         <button onClick={() => { updateUserStatus(emp.id, 'rejected'); if(showToast) showToast("Employer Rejected.", "error"); }} className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 shadow-sm transition-transform hover:scale-105" title="Reject"><X className="w-5 h-5"/></button>
+                       </div>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg border border-gray-200 flex items-center justify-between shadow-sm">
+                       <div className="flex items-center text-sm font-medium text-gray-700 truncate mr-4">
+                         <FileText className="w-4 h-4 mr-2 text-blue-500 shrink-0" /> 
+                         <span className="truncate">{emp.taxDocumentName || 'Tax_Document.pdf'}</span>
+                       </div>
+                       <div className="flex gap-2 shrink-0">
+                         <button onClick={() => handleViewPdf(emp.taxDocument || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf')} className="flex items-center text-xs font-bold bg-blue-50 text-blue-700 px-3 py-1.5 rounded hover:bg-blue-100 transition-colors"><Eye className="w-3 h-3 mr-1" /> View</button>
+                         <a href={emp.taxDocument || '#'} download={emp.taxDocumentName || "Tax_Document.pdf"} className="flex items-center text-xs font-bold bg-gray-100 text-gray-700 px-3 py-1.5 rounded hover:bg-gray-200 transition-colors"><Download className="w-3 h-3 mr-1" /> Download</a>
+                       </div>
+                    </div>
                   </div>
-                  <div className="bg-white p-3 rounded-lg border border-gray-200 flex items-center justify-between shadow-sm">
-                     <div className="flex items-center text-sm font-medium text-gray-700 truncate mr-4">
-                       <FileText className="w-4 h-4 mr-2 text-blue-500 shrink-0" /> 
-                       <span className="truncate">{emp.taxDocumentName || 'Tax_Document.pdf'}</span>
-                     </div>
-                     <div className="flex gap-2 shrink-0">
-                       <button onClick={() => handleViewPdf(emp.taxDocument || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf')} className="flex items-center text-xs font-bold bg-blue-50 text-blue-700 px-3 py-1.5 rounded hover:bg-blue-100 transition-colors">
-                         <Eye className="w-3 h-3 mr-1" /> View
-                       </button>
-                       <a href={emp.taxDocument || '#'} download={emp.taxDocumentName || "Tax_Document.pdf"} className="flex items-center text-xs font-bold bg-gray-100 text-gray-700 px-3 py-1.5 rounded hover:bg-gray-200 transition-colors">
-                         <Download className="w-3 h-3 mr-1" /> Download
-                       </a>
-                     </div>
-                  </div>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* --- NEW: Pending Course Requests --- */}
+          <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
+            <h3 className="text-lg font-bold text-primary mb-4 flex items-center">
+               <BookOpen className="w-5 h-5 mr-2 text-blue-600" /> Pending Course Requests
+            </h3>
+            <div className="space-y-3">
+              {pendingCourseRequests.length === 0 ? <p className="text-sm text-gray-500">No pending course requests.</p> : (
+                pendingCourseRequests.map(req => {
+                  const instructor = users.find(u => u.id === req.senderId);
+                  const isLink = req.actionType === 'link';
+
+                  return (
+                    <div key={req.id} className={`p-4 border rounded-xl flex items-center justify-between transition-colors ${isLink ? 'bg-blue-50 border-blue-100' : 'bg-orange-50 border-orange-100'}`}>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${isLink ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}`}>
+                          {isLink ? <Link2 className="w-5 h-5" /> : <Unlink className="w-5 h-5" />}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-gray-800">
+                            {instructor?.firstName} {instructor?.lastName}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            Wants to <span className="font-bold uppercase tracking-wider">{req.actionType}</span> course <span className="font-bold">{req.courseCode}</span>
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-1.5 shrink-0 ml-4">
+                         <button onClick={() => { resolveCourseRequest(req.id, 'accepted'); if(showToast) showToast("Request Approved", "success"); }} className="p-2 bg-white text-green-600 border border-gray-200 rounded-lg hover:bg-green-50 shadow-sm transition-transform hover:scale-105" title="Approve"><Check className="w-4 h-4"/></button>
+                         <button onClick={() => { resolveCourseRequest(req.id, 'rejected'); if(showToast) showToast("Request Rejected", "error"); }} className="p-2 bg-white text-red-600 border border-gray-200 rounded-lg hover:bg-red-50 shadow-sm transition-transform hover:scale-105" title="Reject"><X className="w-4 h-4"/></button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         </div>
 
@@ -145,7 +186,6 @@ const AdminDashboard = () => {
             {['Administrator', 'Course Instructor', 'Student', 'Employer'].map(role => {
               const roleUsers = systemUsers.filter(u => u.role === role);
               if (roleUsers.length === 0) return null;
-
               return (
                 <div key={role} className="space-y-3">
                   <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2 flex items-center justify-between">
@@ -226,16 +266,16 @@ const AdminDashboard = () => {
         <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
            <h3 className="text-lg font-bold text-primary mb-4 flex items-center"><BookOpen className="w-5 h-5 mr-2" /> Manage Courses</h3>
            <form onSubmit={handleAddCourse} className="flex gap-2 mb-4">
-             <input type="text" placeholder="Code (e.g. CSEN701)" required className="w-1/3 px-3 py-2 border rounded-lg text-sm" value={newCourseCode} onChange={e=>setNewCourseCode(e.target.value)} />
+             <input type="text" placeholder="Code (e.g. CSEN701)" required className="w-1/3 px-3 py-2 border rounded-lg text-sm uppercase" value={newCourseCode} onChange={e=>setNewCourseCode(e.target.value)} />
              <input type="text" placeholder="Course Name" required className="flex-1 px-3 py-2 border rounded-lg text-sm" value={newCourseName} onChange={e=>setNewCourseName(e.target.value)} />
              <button type="submit" className="bg-primary text-white p-2 rounded-lg hover:bg-gray-800"><Plus className="w-5 h-5" /></button>
            </form>
-           <div className="space-y-2 overflow-y-auto max-h-48">
+           <div className="space-y-2 overflow-y-auto max-h-48 pr-2">
              {courses.map(course => (
                <div key={course.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-100 transition-colors hover:bg-white">
                  {editingCourseId === course.id ? (
                    <div className="flex-1 flex gap-2 mr-2">
-                     <input type="text" className="w-1/3 px-2 py-1 text-sm border border-blue-200 rounded outline-none focus:ring-1 focus:ring-blue-400" value={editCourseCode} onChange={e => setEditCourseCode(e.target.value)} />
+                     <input type="text" className="w-1/3 px-2 py-1 text-sm border border-blue-200 rounded outline-none focus:ring-1 focus:ring-blue-400 uppercase" value={editCourseCode} onChange={e => setEditCourseCode(e.target.value)} />
                      <input type="text" className="flex-1 px-2 py-1 text-sm border border-blue-200 rounded outline-none focus:ring-1 focus:ring-blue-400" value={editCourseName} onChange={e => setEditCourseName(e.target.value)} />
                    </div>
                  ) : (
@@ -276,7 +316,7 @@ const AdminDashboard = () => {
            </form>
         </div>
 
-        {/* --- FIXED: Flagged Projects & Appeals --- */}
+        {/* Flagged Projects & Appeals */}
         <div className="bg-surface p-6 rounded-2xl shadow-sm border border-red-100 lg:col-span-2">
           <h3 className="text-lg font-bold text-red-600 mb-4 flex items-center">
             <AlertTriangle className="w-5 h-5 mr-2" /> Moderation Queue (Flagged Projects)
