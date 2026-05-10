@@ -10,7 +10,6 @@ const DashboardHome = () => {
 
   if (!currentUser) return null;
 
-  // --- NEW: Royale Gradients based on Role ---
   const getRoleGradient = (role) => {
     switch (role) {
       case 'Administrator': return 'bg-gradient-to-br from-slate-900 via-gray-800 to-slate-900';
@@ -43,7 +42,7 @@ const DashboardHome = () => {
   const getTopCollaborators = () => {
     const collabIds = invitations.filter(inv => inv.status === 'accepted' && (inv.senderId === currentUser?.id || inv.receiverId === currentUser?.id)).map(inv => inv.senderId === currentUser?.id ? inv.receiverId : inv.senderId);
     const collabCounts = collabIds.reduce((acc, id) => { acc[id] = (acc[id] || 0) + 1; return acc; }, {});
-    return Object.entries(collabCounts).map(([id, count]) => ({ user: users.find(u => u.id === parseInt(id)), count })).filter(c => c.user).sort((a, b) => b.count - a.count).slice(0, 4); // Increased to 4 to fill right column
+    return Object.entries(collabCounts).map(([id, count]) => ({ user: users.find(u => u.id === parseInt(id)), count })).filter(c => c.user).sort((a, b) => b.count - a.count).slice(0, 4);
   };
   const topCollaborators = getTopCollaborators();
 
@@ -51,6 +50,7 @@ const DashboardHome = () => {
   const isEmployer = currentUser?.role === 'Employer';
   const isAdmin = currentUser?.role === 'Administrator';
 
+  // targetInternships pulls Company specific for Employer, and ALL for Admin
   const targetInternships = isEmployer ? internships.filter(i => i.companyName === currentUser?.companyName) : internships;
   const totalOffered = targetInternships.length;
   const totalHiredStudents = applications.filter(app => app.status === 'accepted' && targetInternships.some(i => i.id === app.internshipId)).length;
@@ -69,14 +69,15 @@ const DashboardHome = () => {
   const getRoleCount = (role) => users.filter(u => u.role === role).length;
 
   const recommendedProjects = projects
-    .filter(p => p.visibility === 'public' && p.status === 'active')
+    .filter(p => p.visibility === 'public' && p.creatorId !== currentUser.id && p.status === 'active')
     .sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 3);
 
   return (
     <div className="space-y-6 pb-12">
 
-      {/* ================= TOP STATS ROW (Clean Option B Styling) ================= */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* ================= TOP STATS ROW ================= */}
+      {/* FIXED: Admin gets a 5-card layout to include Employer stats (Req 71) */}
+      <div className={`grid grid-cols-1 md:grid-cols-3 ${isAdmin ? 'xl:grid-cols-5' : ''} gap-6`}>
         {currentUser?.role === 'Student' && (
           <>
             <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-blue-200 transition-colors group">
@@ -114,16 +115,25 @@ const DashboardHome = () => {
         {isAdmin && (
           <>
             <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-blue-200 transition-colors">
-              <div><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Platform Users</p><h3 className="text-3xl font-bold text-primary">{users.length}</h3></div>
-              <Users className="w-8 h-8 text-blue-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+              <div><p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Users</p><h3 className="text-2xl md:text-3xl font-bold text-primary">{users.length}</h3></div>
+              <Users className="w-6 h-6 md:w-8 md:h-8 text-blue-500 opacity-80 group-hover:opacity-100 transition-opacity" />
             </div>
             <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-purple-200 transition-colors">
-              <div><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Total Projects</p><h3 className="text-3xl font-bold text-primary">{projects.length}</h3></div>
-              <Folder className="w-8 h-8 text-purple-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+              <div><p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Projects</p><h3 className="text-2xl md:text-3xl font-bold text-primary">{projects.length}</h3></div>
+              <Folder className="w-6 h-6 md:w-8 md:h-8 text-purple-500 opacity-80 group-hover:opacity-100 transition-opacity" />
             </div>
             <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-green-200 transition-colors">
-              <div><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Total Courses</p><h3 className="text-3xl font-bold text-primary">{courses.length}</h3></div>
-              <BookOpen className="w-8 h-8 text-green-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+              <div><p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Courses</p><h3 className="text-2xl md:text-3xl font-bold text-primary">{courses.length}</h3></div>
+              <BookOpen className="w-6 h-6 md:w-8 md:h-8 text-green-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+            </div>
+            {/* --- FIXED REQ 71: Admin Internship Stats are now explicitly shown --- */}
+            <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-orange-200 transition-colors">
+              <div><p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Internships</p><h3 className="text-2xl md:text-3xl font-bold text-primary">{totalOffered}</h3></div>
+              <Briefcase className="w-6 h-6 md:w-8 md:h-8 text-orange-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+            </div>
+            <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-yellow-200 transition-colors">
+              <div><p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Hired</p><h3 className="text-2xl md:text-3xl font-bold text-primary">{totalHiredStudents}</h3></div>
+              <Award className="w-6 h-6 md:w-8 md:h-8 text-yellow-500 opacity-80 group-hover:opacity-100 transition-opacity" />
             </div>
           </>
         )}
@@ -153,7 +163,7 @@ const DashboardHome = () => {
 
           {currentUser?.role === 'Student' && (
             <>
-              {/* My Applications (Horizontal scroll) */}
+              {/* My Applications */}
               <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xl font-bold text-primary flex items-center"><Briefcase className="w-5 h-5 mr-2 text-blue-600" /> My Applications</h3>
@@ -168,7 +178,6 @@ const DashboardHome = () => {
                       const internship = internships.find(i => i.id === app.internshipId);
                       if (!internship) return null;
                       return (
-                        // FIXED: Changed from <div> to <Link> and added 'group' class for hover effects
                         <Link
                           to="/internships"
                           key={app.id}
@@ -184,8 +193,7 @@ const DashboardHome = () => {
                                ${app.status === 'nominated' ? 'bg-blue-100 text-blue-700 border-blue-200' : ''}
                                ${app.status === 'accepted' ? 'bg-green-100 text-green-700 border-green-200' : ''}
                                ${app.status === 'rejected' ? 'bg-red-100 text-red-700 border-red-200' : ''}
-                             `}>{app.status}</span>
-                            {/* FIXED: Arrow now reacts to the card hover */}
+                              `}>{app.status}</span>
                             <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors transform group-hover:translate-x-1" />
                           </div>
                         </Link>
@@ -195,7 +203,7 @@ const DashboardHome = () => {
                 </div>
               </div>
 
-              {/* Recent Projects (Scrollable list) */}
+              {/* Recent Projects */}
               <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex-1">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xl font-bold text-primary flex items-center"><Folder className="w-5 h-5 mr-2 text-blue-600" /> Recent Projects</h3>
@@ -260,9 +268,23 @@ const DashboardHome = () => {
 
           {(isEmployer || isAdmin) && (
             <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex-1">
-              <h3 className="text-xl font-bold text-primary mb-6 flex items-center">
-                <TrendingUp className="w-5 h-5 mr-2 text-orange-500" /> {isEmployer ? 'My Internships Over Time' : 'Global Internships Over Time'}
-              </h3>
+              {/* --- FIXED REQ 71: Badges added to chart header as well to explicitly tie data to "Over Time" --- */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+                <h3 className="text-xl font-bold text-primary flex items-center">
+                  <TrendingUp className="w-5 h-5 mr-2 text-orange-500" /> {isEmployer ? 'My Internships Over Time' : 'Global Internships Over Time'}
+                </h3>
+                {isAdmin && (
+                  <div className="flex gap-2">
+                     <span className="bg-orange-50 text-orange-700 text-[10px] font-bold px-3 py-1.5 rounded border border-orange-100 flex items-center uppercase tracking-wider">
+                        <Briefcase className="w-3 h-3 mr-1.5"/> {totalOffered} Offered
+                     </span>
+                     <span className="bg-green-50 text-green-700 text-[10px] font-bold px-3 py-1.5 rounded border border-green-100 flex items-center uppercase tracking-wider">
+                        <Award className="w-3 h-3 mr-1.5"/> {totalHiredStudents} Hired
+                     </span>
+                  </div>
+                )}
+              </div>
+              
               <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6 h-48 flex items-end gap-2">
                 {chartLabels.length === 0 ? (
                   <p className="text-sm text-gray-500 w-full text-center pb-4 italic">No internship data available over time.</p>
@@ -311,7 +333,8 @@ const DashboardHome = () => {
             <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-primary flex items-center"><Star className="w-5 h-5 text-yellow-500 mr-2 fill-current" /> Recommended Projects</h3>
-                <Link to="/projects" state={{ activeTab: 'explore' }} className="text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors flex items-center">View all</Link>              </div>
+                <Link to="/projects" state={{ activeTab: 'explore' }} className="text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors flex items-center">View all</Link>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {recommendedProjects.length > 0 ? recommendedProjects.map(proj => {
                   const creator = users.find(u => u.id === proj.creatorId);
@@ -377,7 +400,6 @@ const DashboardHome = () => {
               <p className="text-xs text-gray-500 italic mb-6">No skills added yet.</p>
             )}
 
-            {/* Restored Language Breakdown Logic inside new styling */}
             {(currentUser.role === 'Student' || currentUser.role === 'Course Instructor') && (
               <div>
                 <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3 border-t border-gray-100 pt-4">Language Breakdown</h4>
@@ -406,7 +428,7 @@ const DashboardHome = () => {
             )}
           </div>
 
-          {/* Restored Top Collaborators Logic inside new styling */}
+          {/* Network */}
           {(currentUser?.role === 'Student' || currentUser?.role === 'Course Instructor') && (
             <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-4">

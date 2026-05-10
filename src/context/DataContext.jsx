@@ -1,10 +1,10 @@
 // src/context/DataContext.jsx
 import { createContext, useState, useContext } from 'react';
-import { 
-  initialUsers, initialCourses, initialProjects, initialInternships, 
-  initialTasks, initialApplications, initialProjectComments, 
+import {
+  initialUsers, initialCourses, initialProjects, initialInternships,
+  initialTasks, initialApplications, initialProjectComments,
   initialTaskComments, initialInvitations, initialFavorites,
-  initialMessages 
+  initialMessages
 } from '../assets/dummyData';
 
 const DataContext = createContext();
@@ -27,9 +27,9 @@ export const DataProvider = ({ children }) => {
   const [favorites, setFavorites] = useState(initialFavorites);
   const [messages, setMessages] = useState(initialMessages);
   const [thesisDrafts, setThesisDrafts] = useState(initialThesisDrafts);
-  
+
   // --- UI STATES ---
-  const [toast, setToast] = useState(null); 
+  const [toast, setToast] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null); // REQ: Custom Confirmation Modal
 
   const showToast = (message, type = 'success') => {
@@ -58,15 +58,43 @@ export const DataProvider = ({ children }) => {
 
   const addCourse = (code, name) => setCourses([...courses, { id: `c${courses.length + 1}`, code, name }]);
   const updateCourse = (id, newCode, newName) => setCourses(courses.map(c => c.id === id ? { ...c, code: newCode, name: newName } : c));
-  const deleteCourse = (courseId) => setCourses(courses.filter(c => c.id !== courseId));
+  // --- UPDATED: deleteCourse with Cascading Unlink ---
+  const deleteCourse = (id) => {
+    // 1. Find the course code before we delete it so we know what to unlink
+    const courseToDelete = courses.find(c => c.id === id);
+    if (!courseToDelete) return;
+    const deletedCourseCode = courseToDelete.code;
 
+    // 2. Delete the course from the courses array
+    setCourses(prevCourses => prevCourses.filter(c => c.id !== id));
+
+    // 3. Remove the linkage from ALL instructors
+    setUsers(prevUsers => prevUsers.map(user => {
+      // If the user is an instructor and has this course linked
+      if (user.role === 'Course Instructor' && user.linkedCourses?.includes(deletedCourseCode)) {
+        return {
+          ...user,
+          // Filter out the deleted course code
+          linkedCourses: user.linkedCourses.filter(code => code !== deletedCourseCode)
+        };
+      }
+      return user; // Return other users untouched
+    }));
+
+    // 4. CLEANUP: Delete any pending link/unlink requests for this specific course in the Admin Queue
+    setInvitations(prevInvitations => prevInvitations.filter(inv =>
+      !(inv.type === 'course_request' && inv.courseCode === deletedCourseCode)
+    ));
+
+    if (showToast) showToast(`Course ${deletedCourseCode} deleted and unlinked from instructors.`, "info");
+  };
   const addProject = (p) => {
-    const localDate = new Date().toLocaleDateString('en-CA'); 
+    const localDate = new Date().toLocaleDateString('en-CA');
     setProjects([...projects, { ...p, id: `p${projects.length + 1}`, creationDate: localDate, status: 'active', rating: 0, ratings: [] }]);
   };
   const updateProject = (id, updatedData) => setProjects(projects.map(p => p.id === id ? { ...p, ...updatedData } : p));
   const deleteProject = (id) => setProjects(projects.filter(p => p.id !== id));
-  
+
   const rateProject = (projectId, instructorId, score) => {
     setProjects(projects.map(p => {
       if (p.id === projectId) {
@@ -101,20 +129,20 @@ export const DataProvider = ({ children }) => {
   const resolveFlag = (id, deactivate) => {
     // 1. Update the project status
     setProjects(prev => prev.map(p => p.id === id ? { ...p, isFlagged: false, status: deactivate ? 'deactivated' : 'active', flagReason: null, appealMessage: null } : p));
-    
+
     // 2. NEW: Notify the student if their project was successfully reactivated!
     if (!deactivate) {
       const project = projects.find(p => p.id === id);
       if (project) {
         const admin = users.find(u => u.role === 'Administrator') || { id: 3 };
-        setInvitations(prev => [...prev, { 
-          id: `notif${Date.now()}_${Math.random()}`, 
-          type: 'project_reactivated', 
-          projectId: project.id, 
-          senderId: admin.id, 
-          receiverId: project.creatorId, 
-          status: 'info', 
-          read: false 
+        setInvitations(prev => [...prev, {
+          id: `notif${Date.now()}_${Math.random()}`,
+          type: 'project_reactivated',
+          projectId: project.id,
+          senderId: admin.id,
+          receiverId: project.creatorId,
+          status: 'info',
+          read: false
         }]);
       }
     }
@@ -143,7 +171,7 @@ export const DataProvider = ({ children }) => {
   const updateTask = (id, updatedData) => setTasks(prevTasks => prevTasks.map(t => t.id === id ? { ...t, ...updatedData } : t));
   const deleteTask = (id) => setTasks(tasks.filter(t => t.id !== id));
   const toggleTaskStatus = (id) => setTasks(tasks.map(t => t.id === id ? { ...t, status: t.status === 'pending' ? 'completed' : 'pending' } : t));
-  
+
   const addTaskComment = (c) => {
     const localDate = new Date().toLocaleDateString('en-CA');
     setTaskComments([...taskComments, { ...c, id: `tc${taskComments.length + 1}`, date: localDate }]);
@@ -218,7 +246,7 @@ export const DataProvider = ({ children }) => {
     setInvitations([...invitations, { id: `inv${Date.now()}`, projectId: pId, senderId: sId, receiverId: rId, status: 'pending', read: false }]);
     if (showToast) showToast("Invitation sent!");
   };
-  
+
   const updateInvitationStatus = (id, s) => setInvitations(invitations.map(i => i.id === id ? { ...i, status: s, read: true } : i));
   const deleteInvitation = (id) => setInvitations(invitations.filter(i => i.id !== id));
   const toggleNotificationRead = (id) => setInvitations(invitations.map(i => i.id === id ? { ...i, read: !i.read } : i));
@@ -262,20 +290,20 @@ export const DataProvider = ({ children }) => {
 
   const sendMessage = (senderId, receiverId, text) => {
     const now = new Date();
-    const timestamp = `${now.toLocaleDateString('en-CA')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const timestamp = `${now.toLocaleDateString('en-CA')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     setMessages([...messages, { id: `m${Date.now()}`, senderId, receiverId, text, timestamp, read: false }]);
     setInvitations(prev => [...prev, { id: `notif${Date.now()}`, type: 'new_message', senderId: senderId, receiverId: receiverId, status: 'info', read: false }]);
   };
-  
+
   const markMessagesRead = (receiverId, senderId) => setMessages(messages.map(m => (m.receiverId === receiverId && m.senderId === senderId) ? { ...m, read: true } : m));
   const markMessageNotificationsRead = (receiverId, senderId) => {
     setInvitations(prev => prev.map(inv => (inv.receiverId === receiverId && inv.senderId === senderId && inv.type === 'new_message') ? { ...inv, read: true } : inv));
   };
 
   return (
-    <DataContext.Provider value={{ 
+    <DataContext.Provider value={{
       users, addUser, updateUserStatus, updateUser, toggleUserActiveStatus, resetPassword,
-      courses, addCourse, updateCourse, deleteCourse, 
+      courses, addCourse, updateCourse, deleteCourse,
       projects, addProject, updateProject, deleteProject, rateProject, flagProject, submitAppeal, resolveFlag, toggleProjectStatus,
       thesisDrafts, uploadThesisDraft, setFinalDraft,
       internships, addInternship, updateInternship, deleteInternship, toggleInternshipStatus, toggleArchiveInternship,
@@ -284,7 +312,7 @@ export const DataProvider = ({ children }) => {
       projectComments, addProjectComment, updateProjectComment, deleteProjectComment, taskComments, addTaskComment,
       invitations, sendInvitation, updateInvitationStatus, deleteInvitation, toggleNotificationRead,
       sendCourseRequest, resolveCourseRequest,
-      favorites, toggleFavorite, 
+      favorites, toggleFavorite,
       messages, sendMessage, markMessagesRead, markMessageNotificationsRead,
       toast, showToast,
       confirmDialog, confirmAction // <-- NEW MODAL STATE EXPORTED
