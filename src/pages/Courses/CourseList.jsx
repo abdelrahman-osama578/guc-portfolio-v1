@@ -5,7 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import { BookOpen, Plus, Search, ShieldAlert, X } from 'lucide-react';
 
 const CourseList = () => {
-  const { courses, sendCourseRequest } = useData();
+  // FIXED: Brought in 'invitations', 'showToast', and 'confirmAction'
+  const { courses, sendCourseRequest, invitations, showToast, confirmAction } = useData();
   const { currentUser } = useAuth();
   const [search, setSearch] = useState('');
 
@@ -13,6 +14,17 @@ const CourseList = () => {
     c.code.toLowerCase().includes(search.toLowerCase()) || 
     c.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  // --- NEW: Dynamic Request Tracking ---
+  // Find courses the instructor wants to link but are waiting for admin approval
+  const pendingLinkRequests = invitations
+    .filter(inv => inv.type === 'course_request' && inv.actionType === 'link' && inv.senderId === currentUser?.id && inv.status === 'pending')
+    .map(inv => inv.courseCode);
+
+  // Find courses the instructor wants to unlink but are waiting for admin approval
+  const pendingUnlinkRequests = invitations
+    .filter(inv => inv.type === 'course_request' && inv.actionType === 'unlink' && inv.senderId === currentUser?.id && inv.status === 'pending')
+    .map(inv => inv.courseCode);
 
   return (
     <div className="space-y-6">
@@ -45,6 +57,10 @@ const CourseList = () => {
             const isLinked = currentUser?.linkedCourses?.includes(course.code);
             const isBP = course.code === 'BP';
             
+            // Determine pending status
+            const isPendingLink = pendingLinkRequests.includes(course.code);
+            const isPendingUnlink = pendingUnlinkRequests.includes(course.code);
+            
             return (
                <div key={course.id} className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full hover:shadow-md transition-shadow">
                   <div className="flex items-start gap-4 mb-4">
@@ -65,21 +81,43 @@ const CourseList = () => {
                             <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-3 py-1.5 rounded-lg uppercase tracking-wider">
                               Mandatory Course
                             </span>
+                          ) : isPendingUnlink ? (
+                            <span className="text-xs bg-red-50 text-red-500 px-4 py-2 rounded-lg font-bold flex items-center cursor-not-allowed border border-red-100">
+                              <X className="w-4 h-4 mr-1.5" /> Unlink Pending
+                            </span>
                           ) : (
                             <button 
-                              onClick={() => sendCourseRequest(currentUser.id, course.code, 'unlink')} 
+                              onClick={() => {
+                                if (confirmAction) {
+                                  confirmAction(`Are you sure you want to request unlinking from ${course.code}?`, "Request Unlink", () => {
+                                    sendCourseRequest(currentUser.id, course.code, 'unlink');
+                                    if(showToast) showToast(`Unlink request sent for ${course.code}`);
+                                  });
+                                } else {
+                                  sendCourseRequest(currentUser.id, course.code, 'unlink');
+                                }
+                              }} 
                               className="flex items-center text-xs font-bold text-red-600 bg-red-50 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-colors"
                             >
                               <X className="w-4 h-4 mr-1"/> Request Unlink
                             </button>
                           )
                         ) : (
-                          <button 
-                            onClick={() => sendCourseRequest(currentUser.id, course.code, 'link')} 
-                            className="flex items-center text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
-                          >
-                            <Plus className="w-4 h-4 mr-1"/> Request Link
-                          </button>
+                          isPendingLink ? (
+                            <span className="text-xs bg-blue-50 text-blue-500 px-4 py-2 rounded-lg font-bold flex items-center cursor-not-allowed border border-blue-100">
+                              <Plus className="w-4 h-4 mr-1.5" /> Link Pending
+                            </span>
+                          ) : (
+                            <button 
+                              onClick={() => {
+                                sendCourseRequest(currentUser.id, course.code, 'link');
+                                if(showToast) showToast(`Link request sent for ${course.code}`, "success");
+                              }} 
+                              className="flex items-center text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+                            >
+                              <Plus className="w-4 h-4 mr-1"/> Request Link
+                            </button>
+                          )
                         )
                      )}
                      

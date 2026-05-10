@@ -1,20 +1,20 @@
 // src/pages/Portfolio/PortfolioDetail.jsx
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { ArrowLeft, MessageSquare, Star, Folder, PlaySquare, Code, Edit, Trash2, Eye, FileText, X, Search, CheckSquare, ChevronUp, ChevronDown, Calendar, AlertTriangle, Flag, CheckCircle2, Globe, Mail, MapPin, Briefcase, Edit3 } from 'lucide-react';
-import SkillSphere from '../../components/portfolio/SkillSphere'; // <-- IMPORT THE 3D GALAXY
+import { ArrowLeft, Star, Folder, PlaySquare, Code, Edit, Trash2, Eye, FileText, X, AlertTriangle, Flag, CheckCircle2, Globe, Mail, MapPin, Briefcase, Edit3 } from 'lucide-react';
+import SkillSphere from '../../components/portfolio/SkillSphere'; 
+import CustomSelect from '../../components/common/CustomSelect';
 
 const PortfolioDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const {
-    projects, courses, tasks, addTask, updateTask, deleteTask, users,
-    updateProject, deleteProject, rateProject, projectComments, addProjectComment, updateProjectComment, deleteProjectComment, taskComments, addTaskComment,
-    invitations, sendInvitation, deleteInvitation,
-    thesisDrafts, uploadThesisDraft, setFinalDraft, showToast, flagProject, submitAppeal, confirmAction,
-    updateUser, sendCourseRequest, internships, applications
+    projects, courses, users, updateUser,
+    deleteProject, rateProject, projectComments, addProjectComment, updateProjectComment, deleteProjectComment,
+    invitations, sendCourseRequest, internships, applications,
+    thesisDrafts, uploadThesisDraft, setFinalDraft, showToast, flagProject, submitAppeal, confirmAction
   } = useData();
   const { currentUser } = useAuth();
 
@@ -44,7 +44,6 @@ const PortfolioDetail = () => {
     return isOwnProfile || p.visibility === 'public';
   });
 
-  // REQ 90: Automatically extract completed (accepted) internships
   const completedInternships = applications
     .filter(app => app.studentId === profileUser.id && app.status === 'accepted')
     .map(app => internships.find(i => i.id === app.internshipId))
@@ -65,6 +64,20 @@ const PortfolioDetail = () => {
       setEditForm({ ...editForm, profilePic: fileUrl });
     }
   };
+
+  // --- NEW: Dynamic Request Tracking ---
+  // Find all courses that this user has requested to link but are still pending
+  const pendingLinkedCourses = invitations
+    .filter(inv => inv.type === 'course_request' && inv.actionType === 'link' && inv.senderId === profileUser.id && inv.status === 'pending')
+    .map(inv => inv.courseCode);
+
+  // Exclude both actively linked courses AND courses pending a link from the dropdown
+  const linkableCourseOptions = [
+    { value: '', label: 'Select a course...' },
+    ...courses
+        .filter(c => !profileUser.linkedCourses?.includes(c.code) && !pendingLinkedCourses.includes(c.code))
+        .map(c => ({ value: c.code, label: `${c.code} - ${c.name}` }))
+  ];
 
   return (
     <div className="space-y-6">
@@ -95,7 +108,6 @@ const PortfolioDetail = () => {
             )}
           </div>
 
-          {/* --- FIXED: Text List AND 3D Galaxy for Students --- */}
           {profileUser.role === 'Student' && (
             <div className="w-full text-left">
               <h4 className="font-bold text-sm text-primary mb-2">Skills</h4>
@@ -130,24 +142,17 @@ const PortfolioDetail = () => {
         {/* Main Content Area */}
         <div className="lg:col-span-2 space-y-6">
           
-          {/* Edit Form Modal/Card */}
           {isEditing && (
             <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-200 ring-2 ring-primary ring-opacity-20">
               <h3 className="text-lg font-bold text-primary mb-4">Edit Profile Information</h3>
               <form onSubmit={handleSaveProfile} className="space-y-4">
-                
                 <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
                   <img src={editForm.profilePic} alt="Preview" className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm" />
                   <div className="flex-1">
                     <label className="block text-sm font-bold text-gray-700 mb-1">
                       {profileUser.role === 'Employer' ? 'Update Company Logo' : 'Update Profile Picture'}
                     </label>
-                    <input 
-                      type="file" 
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
-                    />
+                    <input type="file" accept="image/*" onChange={handleImageUpload} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
                   </div>
                 </div>
                 
@@ -187,7 +192,6 @@ const PortfolioDetail = () => {
             </div>
           )}
 
-          {/* Role Specific Main Content */}
           {profileUser.bio && (
             <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
               <h3 className="text-lg font-bold text-primary mb-2">About</h3>
@@ -212,50 +216,67 @@ const PortfolioDetail = () => {
             </div>
           )}
 
-          {/* Linked Courses Management for Instructors */}
           {profileUser.role === 'Course Instructor' && (
             <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 mt-6">
               <h3 className="text-lg font-bold text-primary mb-4">Linked Courses</h3>
               <div className="space-y-2 mb-4">
-                {profileUser.linkedCourses?.map(courseCode => (
-                  <div key={courseCode} className="flex justify-between items-center p-3 bg-gray-50 border border-gray-100 rounded-lg">
-                    <span className="font-bold text-sm text-primary">{courseCode}</span>
-                    {isOwnProfile && courseCode !== 'BP' && (
-                      <button onClick={() => confirmAction(`Request to unlink ${courseCode}?`, "Unlink", () => sendCourseRequest(currentUser.id, courseCode, 'unlink'))} className="text-xs text-red-500 hover:underline">
-                        Request Unlink
-                      </button>
-                    )}
-                    {courseCode === 'BP' && (
-                       <span className="text-[10px] bg-gray-200 text-gray-600 px-2 py-1 rounded uppercase font-bold">Mandatory</span>
-                    )}
+                
+                {/* 1. Actively Linked Courses */}
+                {profileUser.linkedCourses?.map(courseCode => {
+                  // Check if there is an unlinking request pending for this specific course
+                  const isUnlinkPending = invitations.some(inv => inv.type === 'course_request' && inv.actionType === 'unlink' && inv.courseCode === courseCode && inv.senderId === profileUser.id && inv.status === 'pending');
+                  
+                  return (
+                    <div key={courseCode} className={`flex justify-between items-center p-3 border rounded-lg transition-colors ${isUnlinkPending ? 'bg-red-50 border-red-100 opacity-80' : 'bg-gray-50 border-gray-100'}`}>
+                      <span className={`font-bold text-sm ${isUnlinkPending ? 'text-red-700' : 'text-primary'}`}>{courseCode}</span>
+                      
+                      {courseCode === 'BP' ? (
+                         <span className="text-[10px] bg-gray-200 text-gray-600 px-2 py-1 rounded uppercase font-bold">Mandatory</span>
+                      ) : isUnlinkPending ? (
+                         <span className="text-[10px] bg-red-100 text-red-600 px-2 py-1 rounded uppercase font-bold tracking-wider">Unlink Pending</span>
+                      ) : isOwnProfile && (
+                        <button onClick={() => confirmAction(`Request to unlink ${courseCode}?`, "Unlink", () => sendCourseRequest(currentUser.id, courseCode, 'unlink'))} className="text-xs font-bold text-red-500 hover:underline">
+                          Request Unlink
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* 2. New Link Requests (Only visible to the user themselves) */}
+                {isOwnProfile && pendingLinkedCourses.map(courseCode => (
+                  <div key={`pending-link-${courseCode}`} className="flex justify-between items-center p-3 bg-blue-50 border border-blue-100 rounded-lg opacity-80">
+                    <span className="font-bold text-sm text-blue-700">{courseCode}</span>
+                    <span className="text-[10px] bg-blue-100 text-blue-600 px-2 py-1 rounded uppercase font-bold tracking-wider">Link Pending</span>
                   </div>
                 ))}
+
+                {(!profileUser.linkedCourses || profileUser.linkedCourses.length === 0) && pendingLinkedCourses.length === 0 && (
+                   <p className="text-xs text-gray-500 italic px-2">No courses linked yet.</p>
+                )}
               </div>
               
               {isOwnProfile && (
                 <div className="pt-4 border-t border-gray-100">
                   <p className="text-sm font-bold mb-2">Request Link to Course</p>
                   <div className="flex gap-2">
-                    <select 
-                      className="flex-1 text-sm border rounded-lg px-3 py-2 bg-white" 
+                    <CustomSelect 
                       value={selectedCourse} 
-                      onChange={(e) => setSelectedCourse(e.target.value)}
-                    >
-                      <option value="">Select a course...</option>
-                      {courses.filter(c => !profileUser.linkedCourses?.includes(c.code)).map(c => (
-                        <option key={c.id} value={c.code}>{c.code} - {c.name}</option>
-                      ))}
-                    </select>
+                      onChange={(val) => setSelectedCourse(val)} 
+                      options={linkableCourseOptions} 
+                      className="flex-1 bg-white" 
+                    />
                     <button 
                       onClick={() => {
                         if(selectedCourse) {
                           sendCourseRequest(currentUser.id, selectedCourse, 'link');
                           setSelectedCourse(''); 
+                          if (showToast) showToast(`Link request for ${selectedCourse} sent to administrators.`, "success");
                         } else {
-                          showToast("Please select a course first.", "error");
+                          if (showToast) showToast("Please select a course first.", "error");
                         }
                       }} 
-                      className="bg-blue-50 text-blue-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-100"
+                      className="bg-blue-50 text-blue-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-100 shadow-sm transition-colors"
                     >
                       Send Request
                     </button>
@@ -265,7 +286,6 @@ const PortfolioDetail = () => {
             </div>
           )}
 
-          {/* REQ 90: Internship Experience Section for Students */}
           {profileUser.role === 'Student' && completedInternships.length > 0 && (
             <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
               <h3 className="text-lg font-bold text-primary mb-6 flex items-center">
@@ -290,7 +310,6 @@ const PortfolioDetail = () => {
             </div>
           )}
 
-          {/* Project Showcase */}
           {profileUser.role === 'Student' && (
             <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
               <h3 className="text-lg font-bold text-primary mb-6 flex items-center">

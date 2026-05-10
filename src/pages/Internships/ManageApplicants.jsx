@@ -13,6 +13,7 @@ const applicantStatusOptions = [
   { value: 'accepted', label: 'Accepted' },
   { value: 'rejected', label: 'Rejected' }
 ];
+
 const filterOptions = [
   { value: 'all', label: 'All Statuses' },
   { value: 'suggested', label: '🌟 Suggested (Favorites)' },
@@ -58,6 +59,9 @@ const ManageApplicants = () => {
   const getStudent = (studentId) => users.find(u => u.id === studentId);
   const getStudentProjectCount = (studentId) => projects.filter(p => p.creatorId === studentId && p.visibility === 'public').length;
 
+  // Prevent time travel: Get today's date formatted as YYYY-MM-DD
+  const todayDateStr = new Date().toISOString().split('T')[0];
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const dataToSave = {
@@ -90,8 +94,7 @@ const ManageApplicants = () => {
   };
 
   const handleArchiveClick = (internship) => {
-    const today = new Date().toLocaleDateString('en-CA');
-    if (internship.deadline >= today) {
+    if (internship.deadline >= todayDateStr) {
        if (showToast) showToast("You can only archive an internship after the deadline has passed.", "error");
        return;
     }
@@ -127,7 +130,11 @@ const ManageApplicants = () => {
               <div><label className="block text-sm font-medium mb-1">Details / Responsibilities</label><textarea required rows="3" className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none" value={formData.details} onChange={e => setFormData({...formData, details: e.target.value})} /></div>
               <div className="grid grid-cols-2 gap-4">
                 <div><label className="block text-sm font-medium mb-1">Duration</label><input required type="text" className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none" value={formData.duration} onChange={e => setFormData({...formData, duration: e.target.value})} /></div>
-                <div><label className="block text-sm font-medium mb-1">Deadline</label><input required type="date" className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none text-gray-600" value={formData.deadline} onChange={e => setFormData({...formData, deadline: e.target.value})} /></div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Deadline</label>
+                  {/* DESIGN FOR ERRORS: Added min property here to prevent past dates */}
+                  <input required type="date" min={todayDateStr} className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none text-gray-600" value={formData.deadline} onChange={e => setFormData({...formData, deadline: e.target.value})} />
+                </div>
               </div>
               <div><label className="block text-sm font-medium mb-1">Required Skills (comma separated)</label><input required type="text" placeholder="React, Node, etc." className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none" value={formData.skills} onChange={e => setFormData({...formData, skills: e.target.value})} /></div>
               <div><label className="block text-sm font-medium mb-1">Programming Languages (comma separated)</label><input required type="text" placeholder="JavaScript, Python, etc." className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none" value={formData.languages} onChange={e => setFormData({...formData, languages: e.target.value})} /></div>
@@ -163,8 +170,8 @@ const ManageApplicants = () => {
         }
 
         return (
-          <div key={internship.id} className="bg-surface p-6 rounded-3xl shadow-sm border border-gray-100 mb-6 relative overflow-hidden hover:shadow-md transition-shadow">
-            {viewArchived && <div className="absolute top-0 left-0 w-full h-1 bg-purple-500"></div>}
+          <div key={internship.id} className="bg-surface p-6 rounded-3xl shadow-sm border border-gray-100 mb-6 relative hover:shadow-md transition-shadow">
+            {viewArchived && <div className="absolute top-0 left-0 w-full h-1 bg-purple-500 rounded-t-3xl"></div>}
             
             <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-gray-100 pb-4 mb-4 gap-4">
               <div>
@@ -210,6 +217,7 @@ const ManageApplicants = () => {
             <div className="flex flex-col sm:flex-row justify-between items-center mb-4 bg-gray-50 p-3 rounded-xl border border-gray-100 gap-3">
               <span className="text-sm font-bold text-gray-700">Applicants ({internshipApps.length})</span>
               <div className="flex flex-wrap gap-2">
+                {/* SYMMETRY FIX: Replaced native selects with CustomSelect */}
                 <CustomSelect 
                   value={currentFilter} 
                   onChange={(val) => setFilterStatus(prev => ({ ...prev, [internship.id]: val }))}
@@ -247,14 +255,12 @@ const ManageApplicants = () => {
                           </div>
                         </div>
                         
-                       {/* FIXED: Using custom confirmAction instead of native window.confirm */}
                         <CustomStatusDropdown 
                           status={app.status}
                           options={applicantStatusOptions}
                           onChange={(e) => {
                             const newStatus = e.target.value;
                             if (newStatus === 'accepted' || newStatus === 'rejected') {
-                              // Use our custom global modal here!
                               confirmAction(
                                 `Are you sure you want to mark this applicant as ${newStatus.toUpperCase()}? This will instantly send an official notification to the student.`,
                                 `Yes, mark as ${newStatus}`,
@@ -282,7 +288,6 @@ const ManageApplicants = () => {
       {selectedInternship && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-2xl animate-in fade-in zoom-in duration-200 max-h-[90vh] flex flex-col">
-            
             <div className="flex justify-between items-start mb-4 shrink-0 border-b border-gray-100 pb-4">
               <div>
                 <h3 className="text-2xl font-bold text-primary mb-1">{selectedInternship.title}</h3>
@@ -301,7 +306,6 @@ const ManageApplicants = () => {
             </div>
             
             <div className="overflow-y-auto flex-1 pr-2 space-y-6">
-              
               <div className="flex flex-wrap gap-4 text-sm font-medium bg-gray-50 p-4 rounded-xl border border-gray-100">
                 <div className="flex items-center text-gray-700"><Clock className="w-4 h-4 mr-2 text-gray-400" /> Duration: {selectedInternship.duration}</div>
                 <div className="flex items-center text-red-600"><Calendar className="w-4 h-4 mr-2 text-red-400" /> Deadline: {selectedInternship.deadline}</div>

@@ -5,11 +5,17 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { ArrowLeft, MessageSquare, Star, Folder, PlaySquare, Code, Edit, Trash2, Eye, FileText, X, Search, CheckSquare, ChevronUp, ChevronDown, User, Calendar, AlertTriangle, Flag, CheckCircle2 } from 'lucide-react';
 import CustomStatusDropdown from '../../components/portfolio/CustomStatusDropdown';
+import CustomSelect from '../../components/common/CustomSelect'; // SYMMETRY FIX
 
 const taskStatusOptions = [
   { value: 'pending', label: 'Pending' },
   { value: 'post-poned', label: 'Postponed' },
   { value: 'completed', label: 'Completed' },
+];
+
+const visibilityOptions = [
+  { value: 'private', label: 'Private' },
+  { value: 'public', label: 'Public' }
 ];
 
 const ProjectDetail = () => {
@@ -38,8 +44,9 @@ const ProjectDetail = () => {
   const [inviteSearchQuery, setInviteSearchQuery] = useState('');
   
   // Task States
+  const todayDateStr = new Date().toISOString().split('T')[0]; // Prevent time travel
   const [newTaskDesc, setNewTaskDesc] = useState('');
-  const [newTaskDeadline, setNewTaskDeadline] = useState(new Date().toLocaleDateString('en-CA'));
+  const [newTaskDeadline, setNewTaskDeadline] = useState(todayDateStr);
   const [newTaskAssignee, setNewTaskAssignee] = useState(project?.creatorId || '');
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [editTaskData, setEditTaskData] = useState({});
@@ -57,7 +64,7 @@ const ProjectDetail = () => {
   const [flagReasonText, setFlagReasonText] = useState('');
   const [appealText, setAppealText] = useState('');
 
-  // Derived Data & Auth
+  // Derived Data
   const ratings = project?.ratings || [];
   const totalRatings = ratings.length;
   const averageScore = totalRatings > 0 ? (ratings.reduce((sum, r) => sum + r.score, 0) / totalRatings).toFixed(1) : 0;
@@ -69,11 +76,9 @@ const ProjectDetail = () => {
   const canManageProject = isCreator || isAcceptedCollaborator;
   const canViewFeedback = canManageProject || isCourseInstructor || currentUser?.role === 'Administrator';
 
-  // Filtered Lists
   const projectTasks = tasks.filter(t => t.projectId === id).sort((a, b) => (a.order || 0) - (b.order || 0));
   const projComments = projectComments.filter(c => c.projectId === id);
   const projectDrafts = thesisDrafts?.filter(d => d.projectId === id) || [];
-  
   const hasFinalDraft = projectDrafts.some(d => d.isFinal);
   const visibleDrafts = projectDrafts.filter(draft => {
     if (canManageProject) return true; 
@@ -85,6 +90,10 @@ const ProjectDetail = () => {
     users.find(u => u.id === project?.creatorId),
     ...invitations.filter(inv => inv.projectId === id && inv.status === 'accepted').map(inv => users.find(u => u.id === inv.receiverId))
   ].filter(Boolean);
+
+  // Derived Options for CustomSelects
+  const courseOptions = courses.map(c => ({ value: c.id, label: `${c.code} - ${c.name}` }));
+  const assigneeOptions = teamMembers.map(m => ({ value: m.id, label: `${m.firstName} ${m.lastName}` }));
 
   const availableUsersToInvite = users.filter(u => {
     if (u.id === currentUser?.id) return false;
@@ -102,7 +111,6 @@ const ProjectDetail = () => {
 
   if (!project) return <div className="p-8 text-center text-gray-500">Project not found.</div>;
 
-  // Handlers
   const handleDraftUploadChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
@@ -166,7 +174,7 @@ const ProjectDetail = () => {
       order: projectTasks.length > 0 ? Math.max(...projectTasks.map(t => t.order || 0)) + 1 : 1
     });
     setNewTaskDesc('');
-    setNewTaskDeadline(new Date().toLocaleDateString('en-CA'));
+    setNewTaskDeadline(todayDateStr);
     if (showToast) showToast("Task created successfully!");
   };
 
@@ -235,7 +243,6 @@ const ProjectDetail = () => {
 
   return (
     <div className="space-y-6 relative">
-      {/* Header */}
       <div>
         <Link to="/projects" className="flex items-center text-sm text-gray-500 hover:text-primary mb-4 transition-colors">
           <ArrowLeft className="w-4 h-4 mr-1" /> Back
@@ -251,15 +258,10 @@ const ProjectDetail = () => {
             <div className="flex gap-2 mt-4">
               {isCreator && (
                 <>
-                  <button onClick={() => setIsEditingProj(true)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Edit Project">
-                    <Edit className="w-5 h-5" />
-                  </button>
-                  <button onClick={handleDeleteProject} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Delete">
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+                  <button onClick={() => setIsEditingProj(true)} className="p-2 text-gray-400 hover:text-primary hover:scale-110 hover:bg-gray-50 rounded-lg transition-all" title="Edit Project"><Edit className="w-5 h-5" /></button>
+                  <button onClick={handleDeleteProject} className="p-2 text-gray-400 hover:text-red-600 hover:scale-110 hover:bg-red-50 rounded-lg transition-all" title="Delete"><Trash2 className="w-5 h-5" /></button>
                 </>
               )}
-              {/* Flag Button */}
               {(currentUser?.role === 'Administrator' || currentUser?.role === 'Course Instructor') && !project.isFlagged && (
                 <button onClick={() => setShowFlagModal(true)} className="flex items-center text-xs font-bold bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100 transition-colors">
                   <Flag className="w-3.5 h-3.5 mr-1" /> Flag Project
@@ -269,37 +271,20 @@ const ProjectDetail = () => {
           </div>
           <div className="flex flex-col items-end gap-2">
             <span className={`px-3 py-1 rounded-full text-xs font-medium border uppercase ${project.visibility === 'public' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>{project.visibility}</span>
-
             <div className="flex items-center gap-1.5 mt-1 bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm">
-              <span className="text-sm font-bold text-gray-800">
-                {averageScore > 0 ? averageScore : '0.0'}
-              </span>
-
+              <span className="text-sm font-bold text-gray-800">{averageScore > 0 ? averageScore : '0.0'}</span>
               <div className="relative inline-flex">
-                <div className="flex">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star key={`empty-${star}`} className="w-4 h-4 text-gray-200" />
-                  ))}
-                </div>
-
-                <div
-                  className="flex absolute top-0 left-0 overflow-hidden"
-                  style={{ width: `${(averageScore / 5) * 100}%` }}
-                >
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star key={`gold-${star}`} className="w-4 h-4 text-yellow-500 fill-current shrink-0" />
-                  ))}
+                <div className="flex">{[1, 2, 3, 4, 5].map((star) => <Star key={`empty-${star}`} className="w-4 h-4 text-gray-200" />)}</div>
+                <div className="flex absolute top-0 left-0 overflow-hidden" style={{ width: `${(averageScore / 5) * 100}%` }}>
+                  {[1, 2, 3, 4, 5].map((star) => <Star key={`gold-${star}`} className="w-4 h-4 text-yellow-500 fill-current shrink-0" />)}
                 </div>
               </div>
-
               <span className="text-xs text-gray-500 font-medium ml-1">({totalRatings})</span>
             </div>
-
           </div>
         </div>
       </div>
 
-      {/* Flag Modal */}
       {showFlagModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-lg">
@@ -316,18 +301,39 @@ const ProjectDetail = () => {
         </div>
       )}
 
-      {/* Edit Modal */}
       {isEditingProj && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-lg">
             <h3 className="text-xl font-bold mb-4">Edit Project</h3>
             <form onSubmit={handleUpdateProject} className="space-y-4">
               <div><label className="block text-sm font-medium mb-1">Project Title</label><input type="text" required className="w-full px-3 py-2 border rounded-lg text-sm" value={projFormData.title} onChange={e => setProjFormData({ ...projFormData, title: e.target.value })} /></div>
-              <div><label className="block text-sm font-medium mb-1">Course</label><select required className="w-full px-3 py-2 border rounded-lg text-sm bg-white" value={projFormData.courseId} onChange={e => setProjFormData({ ...projFormData, courseId: e.target.value })}>{courses.map(c => <option key={c.id} value={c.id}>{c.code} - {c.name}</option>)}</select></div>
+              
+              {/* SYMMETRY FIX: Replaced native select with CustomSelect */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Course</label>
+                <CustomSelect 
+                  value={projFormData.courseId} 
+                  onChange={(val) => setProjFormData({ ...projFormData, courseId: parseInt(val) })} 
+                  options={courseOptions} 
+                  className="w-full" 
+                />
+              </div>
+
               <div><label className="block text-sm font-medium mb-1">GitHub Link</label><input type="url" className="w-full px-3 py-2 border rounded-lg text-sm" value={projFormData.githubLink} onChange={e => setProjFormData({ ...projFormData, githubLink: e.target.value })} /></div>
               <div><label className="block text-sm font-medium mb-1">Demo Video Link</label><input type="url" className="w-full px-3 py-2 border rounded-lg text-sm" value={projFormData.demoVideo} onChange={e => setProjFormData({ ...projFormData, demoVideo: e.target.value })} /></div>
               <div><label className="block text-sm font-medium mb-1">Languages (comma separated)</label><input type="text" required className="w-full px-3 py-2 border rounded-lg text-sm" value={projFormData.languages} onChange={e => setProjFormData({ ...projFormData, languages: e.target.value })} /></div>
-              <div><label className="block text-sm font-medium mb-1">Visibility</label><select className="w-full px-3 py-2 border rounded-lg text-sm bg-white" value={projFormData.visibility} onChange={e => setProjFormData({ ...projFormData, visibility: e.target.value })}><option value="private">Private</option><option value="public">Public</option></select></div>
+              
+              {/* SYMMETRY FIX: Replaced native select with CustomSelect */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Visibility</label>
+                <CustomSelect 
+                  value={projFormData.visibility} 
+                  onChange={(val) => setProjFormData({ ...projFormData, visibility: val })} 
+                  options={visibilityOptions} 
+                  className="w-full" 
+                />
+              </div>
+
               <div className="flex justify-end gap-2 pt-4"><button type="button" onClick={() => setIsEditingProj(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button><button type="submit" className="px-4 py-2 text-sm text-white bg-primary rounded-lg hover:bg-gray-800">Save</button></div>
             </form>
           </div>
@@ -337,7 +343,6 @@ const ProjectDetail = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
 
-          {/* Dynamic Appeal Banner */}
           {project.isFlagged && isCreator && (
             <div className={`p-5 rounded-2xl shadow-sm border ${project.appealMessage ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200'}`}>
               <h3 className={`${project.appealMessage ? 'text-yellow-700' : 'text-red-700'} font-bold flex items-center text-lg`}>
@@ -362,7 +367,6 @@ const ProjectDetail = () => {
             </div>
           )}
 
-          {/* BACHELOR PROJECT THESIS DRAFTS */}
           {course?.code === 'BP' && (
             <div className="bg-surface p-6 rounded-2xl shadow-sm border border-purple-100 mb-6">
               <div className="flex items-center justify-between mb-4">
@@ -394,13 +398,10 @@ const ProjectDetail = () => {
             </div>
           )}
 
-          {/* TASK LIST */}
           <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
             <h3 className="text-lg font-bold text-primary mb-6 flex items-center"><CheckSquare className="w-5 h-5 mr-2 text-blue-500" /> Task Management</h3>
-
             <div className="space-y-4 mb-6">
               {projectTasks.length === 0 && <p className="text-sm text-gray-500 italic">No tasks created yet.</p>}
-
               {projectTasks.map((task, index) => {
                 const tComments = taskComments.filter(c => c.taskId === task.id);
                 const canEditStatus = isCreator || currentUser?.id === task.assigneeId;
@@ -410,12 +411,17 @@ const ProjectDetail = () => {
                     <h4 className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-1">Edit Task</h4>
                     <input type="text" value={editTaskData.description} onChange={e => setEditTaskData({ ...editTaskData, description: e.target.value })} className="border border-blue-200 p-2 rounded-lg text-sm w-full outline-none focus:ring-2 focus:ring-blue-400" />
                     <div className="flex flex-col sm:flex-row gap-2">
-                      <input type="date" value={editTaskData.deadline} onChange={e => setEditTaskData({ ...editTaskData, deadline: e.target.value })} className="border border-blue-200 p-2 rounded-lg text-sm flex-1 outline-none" />
+                      {/* DESIGN FOR ERRORS: Added min to edit task */}
+                      <input type="date" min={todayDateStr} value={editTaskData.deadline} onChange={e => setEditTaskData({ ...editTaskData, deadline: e.target.value })} className="border border-blue-200 p-2 rounded-lg text-sm flex-1 outline-none" />
 
                       {course?.code !== 'BP' && (
-                        <select value={editTaskData.assigneeId} onChange={e => setEditTaskData({ ...editTaskData, assigneeId: parseInt(e.target.value) })} className="border border-blue-200 p-2 rounded-lg text-sm bg-white flex-1 outline-none">
-                          {teamMembers.map(m => <option key={m.id} value={m.id}>{m.firstName} {m.lastName}</option>)}
-                        </select>
+                        /* SYMMETRY FIX: Replaced native select with CustomSelect */
+                        <CustomSelect 
+                          value={editTaskData.assigneeId} 
+                          onChange={(val) => setEditTaskData({ ...editTaskData, assigneeId: parseInt(val) })} 
+                          options={assigneeOptions} 
+                          className="flex-1 bg-white border-blue-200" 
+                        />
                       )}
                       
                       <CustomStatusDropdown 
@@ -431,7 +437,7 @@ const ProjectDetail = () => {
                   </div>
                 ) : (
                   <div key={task.id} className="border border-gray-100 rounded-xl shadow-sm">
-                    <div className="flex items-center justify-between p-4 bg-gray-50 hover:bg-white transition-colors">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 hover:bg-white transition-colors rounded-t-xl">
                       <div className="flex items-center gap-3 flex-1">
                         {isCreator && (
                           <div className="flex flex-col mr-1 items-center justify-center text-gray-300">
@@ -458,12 +464,8 @@ const ProjectDetail = () => {
 
                         {isCreator && (
                           <div className="flex gap-1">
-                            <button onClick={() => { setEditingTaskId(task.id); setEditTaskData(task); }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:scale-110 rounded transition-all" title="Edit Task">
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button onClick={() => deleteTask(task.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:scale-110 rounded transition-all" title="Delete Task">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            <button onClick={() => { setEditingTaskId(task.id); setEditTaskData(task); }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:scale-110 rounded transition-all" title="Edit Task"><Edit className="w-4 h-4" /></button>
+                            <button onClick={() => confirmAction("Are you sure?", "Delete", () => deleteTask(task.id))} className="p-1.5 text-gray-400 hover:text-red-600 hover:scale-110 rounded transition-all" title="Delete Task"><Trash2 className="w-4 h-4" /></button>
                           </div>
                         )}
 
@@ -474,14 +476,14 @@ const ProjectDetail = () => {
                     </div>
 
                     {canViewFeedback && tComments.length > 0 && (
-                      <div className="p-4 bg-white border-t border-gray-50 space-y-2">
+                      <div className="p-4 bg-white border-t border-gray-50 space-y-2 rounded-b-xl">
                         {tComments.map(c => <div key={c.id} className="text-xs bg-blue-50 p-2 rounded-lg text-blue-900"><span className="font-bold">{getUserName(c.instructorId)}: </span> {c.text}</div>)}
                       </div>
                     )}
 
                     {isCourseInstructor && activeTaskComment === task.id && (
-                      <div className="p-3 bg-white border-t border-gray-50 flex gap-2">
-                        <input type="text" placeholder="Add feedback on this task..." className="flex-1 text-xs px-3 py-1 border rounded-lg focus:ring-primary" value={newTaskCommentText[task.id] || ''} onChange={(e) => setNewTaskCommentText({ ...newTaskCommentText, [task.id]: e.target.value })} />
+                      <div className="p-3 bg-white border-t border-gray-50 flex gap-2 rounded-b-xl">
+                        <input type="text" placeholder="Add feedback on this task..." className="flex-1 text-xs px-3 py-1 border rounded-lg focus:ring-primary outline-none" value={newTaskCommentText[task.id] || ''} onChange={(e) => setNewTaskCommentText({ ...newTaskCommentText, [task.id]: e.target.value })} />
                         <button onClick={() => handleAddTaskComment(task.id)} className="text-xs bg-primary text-white px-3 rounded-lg">Save</button>
                       </div>
                     )}
@@ -495,13 +497,18 @@ const ProjectDetail = () => {
                 <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Create New Task</h4>
                 <input type="text" required placeholder="Short task description (1 line)..." className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary" value={newTaskDesc} onChange={(e) => setNewTaskDesc(e.target.value)} />
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <input type="date" required className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary text-gray-600" value={newTaskDeadline} onChange={(e) => setNewTaskDeadline(e.target.value)} />
+                  
+                  {/* DESIGN FOR ERRORS: Added min to create task */}
+                  <input type="date" min={todayDateStr} required className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary text-gray-600" value={newTaskDeadline} onChange={(e) => setNewTaskDeadline(e.target.value)} />
 
                   {course?.code !== 'BP' ? (
-                    <select className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-primary" value={newTaskAssignee} onChange={(e) => setNewTaskAssignee(e.target.value)}>
-                      <option value="" disabled>Assign to...</option>
-                      {teamMembers.map(m => <option key={m.id} value={m.id}>{m.firstName} {m.lastName}</option>)}
-                    </select>
+                    /* SYMMETRY FIX: Replaced native select with CustomSelect */
+                    <CustomSelect 
+                      value={newTaskAssignee} 
+                      onChange={(val) => setNewTaskAssignee(val)} 
+                      options={[{ value: '', label: 'Assign to...' }, ...assigneeOptions]} 
+                      className="flex-1 bg-white border-gray-300" 
+                    />
                   ) : (
                     <div className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-100 text-gray-500 flex items-center">
                       Auto-assigned to Creator (BP)
@@ -560,18 +567,12 @@ const ProjectDetail = () => {
                     <div className="flex items-center gap-1">
                       <span className="text-xs text-gray-500 mr-2">Your Rating:</span>
                       {[1, 2, 3, 4, 5].map((star) => (
-                        <button
-                          key={star}
-                          type="button"
-                          onClick={() => rateProject(project.id, currentUser.id, star)}
-                          className={`${star <= myRating ? 'text-yellow-500' : 'text-gray-300'} hover:scale-110 transition-transform`}
-                        >
+                        <button key={star} type="button" onClick={() => rateProject(project.id, currentUser.id, star)} className={`${star <= myRating ? 'text-yellow-500' : 'text-gray-300'} hover:scale-110 transition-transform`}>
                           <Star className={`w-5 h-5 ${star <= myRating ? 'fill-current' : ''}`} />
                         </button>
                       ))}
                     </div>
                   </div>
-
                   <form onSubmit={handleAddProjComment}>
                     <textarea rows="3" placeholder="Write overall project feedback..." className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm mb-2" value={newProjComment} onChange={(e) => setNewProjComment(e.target.value)}></textarea>
                     <button type="submit" className="bg-primary text-white px-4 py-2 rounded-xl text-sm hover:bg-gray-800 transition-colors">Post Feedback</button>
@@ -582,7 +583,6 @@ const ProjectDetail = () => {
           )}
         </div>
 
-        {/* Sidebar: Details & Manage Team */}
         <div className="space-y-6">
           <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
             <h3 className="text-lg font-bold text-primary mb-4">Project Details</h3>
@@ -604,7 +604,7 @@ const ProjectDetail = () => {
                 return (
                   <div key={inv.id} className="flex items-center justify-between p-2 border border-gray-100 rounded-lg">
                     <div className="flex items-center gap-3"><img src={receiver?.profilePic} className="w-8 h-8 rounded-full" alt="" /><div><p className="text-sm font-bold text-primary">{receiver?.firstName}</p><p className={`text-xs capitalize ${inv.status === 'accepted' ? 'text-green-600' : inv.status === 'rejected' ? 'text-red-500' : 'text-yellow-500'}`}>{inv.status}</p></div></div>
-                    {isCreator && <button onClick={() => deleteInvitation(inv.id)} className="text-gray-400 hover:text-red-500 text-xs font-medium">Remove</button>}
+                    {isCreator && <button onClick={() => confirmAction(`Remove ${receiver?.firstName}?`, "Remove", () => deleteInvitation(inv.id))} className="text-gray-400 hover:text-red-500 text-xs font-medium">Remove</button>}
                   </div>
                 );
               })}

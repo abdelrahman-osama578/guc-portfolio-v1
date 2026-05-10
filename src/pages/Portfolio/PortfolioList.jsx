@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { Search, Star, ExternalLink, MapPin } from 'lucide-react';
+import { Search, Star, ExternalLink, MapPin, BookOpen } from 'lucide-react'; // Added BookOpen icon
 import { Link } from 'react-router-dom';
 
 const PortfolioList = () => {
@@ -41,14 +41,18 @@ const PortfolioList = () => {
       if (user.role !== roleFilter) return false;
     }
 
+    // --- FIXED REQUIREMENT #8: Search Instructors by Name or Course ---
     if (searchTerm) {
       const query = searchTerm.toLowerCase();
       const fullName = `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase();
       const companyName = (user.companyName || '').toLowerCase();
       const major = (user.major || '').toLowerCase();
       const skillsMatch = user.skills?.some(s => s.toLowerCase().includes(query));
+      
+      // New: Check if the user is an instructor and teaches the searched course
+      const courseMatch = user.role === 'Course Instructor' && user.linkedCourses?.some(c => c.toLowerCase().includes(query));
 
-      if (!fullName.includes(query) && !companyName.includes(query) && !major.includes(query) && !skillsMatch) {
+      if (!fullName.includes(query) && !companyName.includes(query) && !major.includes(query) && !skillsMatch && !courseMatch) {
         return false;
       }
     }
@@ -63,7 +67,6 @@ const PortfolioList = () => {
         
         <div className="flex flex-col lg:flex-row items-center gap-4 w-full xl:w-auto">
           
-          {/* Role Filter Tabs (Screen readers will read these naturally as buttons) */}
           <div className="flex bg-gray-100 p-1 rounded-xl w-full lg:w-auto shadow-inner overflow-x-auto" role="group" aria-label="Filter by role">
             {availableTabs.map(role => (
               <button
@@ -81,14 +84,13 @@ const PortfolioList = () => {
             ))}
           </div>
 
-          {/* ACCESSIBILITY FIX: Search Bar now has an invisible label for screen readers */}
           <div className="relative w-full lg:w-64 shrink-0">
             <label htmlFor="directory-search" className="sr-only">Search the directory</label>
             <Search aria-hidden="true" className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
             <input 
               id="directory-search"
               type="text" 
-              placeholder="Search people, skills, companies..." 
+              placeholder="Search people, courses, companies..." 
               className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -107,6 +109,9 @@ const PortfolioList = () => {
             const isFav = favorites.some(f => f.userId === currentUser?.id && f.itemId === user.id && f.type === 'portfolio');
             const displayName = user.role === 'Employer' ? user.companyName : `${user.firstName} ${user.lastName}`;
 
+            // Determine if we need to show extra info below the name
+            const hasSubInfo = user.major || user.address || (user.role === 'Course Instructor' && user.linkedCourses?.length > 0);
+
             return (
               <div key={user.id} className="bg-surface rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all flex flex-col group relative">
                 
@@ -117,7 +122,6 @@ const PortfolioList = () => {
                       className={`absolute top-3 right-3 p-1.5 rounded-full bg-white shadow-sm transition-transform hover:scale-110 ${isFav ? 'text-yellow-500' : 'text-gray-300'}`}
                       title={isFav ? "Remove from favorites" : "Add to favorites"}
                     >
-                      {/* ACCESSIBILITY FIX: Screen reader explicitly reads what the star button does */}
                       <span className="sr-only">
                         {isFav ? `Remove ${displayName} from favorites` : `Add ${displayName} to favorites`}
                       </span>
@@ -129,7 +133,6 @@ const PortfolioList = () => {
                 <div className="px-5 pb-5 pt-0 relative flex-1 flex flex-col">
                   <div className="flex justify-between items-end mb-3">
                     <div className="w-16 h-16 rounded-full border-4 border-white bg-gray-50 shadow-sm overflow-hidden -mt-8 relative z-10">
-                      {/* ACCESSIBILITY FIX: Alt text added to profile picture */}
                       <img src={user.profilePic} alt={`Profile picture of ${displayName}`} className="w-full h-full object-cover" />
                     </div>
                     <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
@@ -143,9 +146,12 @@ const PortfolioList = () => {
                     </h3>
                   </Link>
 
-                  {(user.major || user.address) && (
+                  {/* UI UPDATE: Show courses taught by the instructor so the search result makes sense */}
+                  {hasSubInfo && (
                     <p className="text-xs text-gray-500 font-medium mt-1 flex items-center">
-                      {user.role === 'Employer' ? <><MapPin aria-hidden="true" className="w-3 h-3 mr-1"/> {user.address}</> : user.major}
+                      {user.role === 'Employer' ? <><MapPin aria-hidden="true" className="w-3 h-3 mr-1"/> {user.address}</> : 
+                       user.role === 'Course Instructor' ? <><BookOpen aria-hidden="true" className="w-3 h-3 mr-1"/> {user.linkedCourses.join(', ')}</> : 
+                       user.major}
                     </p>
                   )}
 
@@ -167,7 +173,6 @@ const PortfolioList = () => {
                   <div className="mt-auto pt-5">
                     <Link to={`/portfolios/${user.id}`} className="flex items-center justify-center w-full py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 text-sm font-bold rounded-xl transition-colors border border-gray-200 group-hover:border-blue-200 group-hover:text-blue-700">
                       View Profile 
-                      {/* ACCESSIBILITY FIX: Screen reader knows exactly whose profile is being opened */}
                       <span className="sr-only">of {displayName}</span>
                       <ExternalLink aria-hidden="true" className="w-3.5 h-3.5 ml-1.5" />
                     </Link>
