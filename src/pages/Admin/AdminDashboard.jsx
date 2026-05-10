@@ -1,10 +1,11 @@
 // src/pages/Admin/AdminDashboard.jsx
 import { useState } from 'react';
+import { Link } from 'react-router-dom'; 
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { Users, Folder, BookOpen, Check, X, AlertTriangle, Plus, Trash2, ShieldAlert, Download, Eye, FileText, MapPin, Phone, Info, Link2, Unlink, Edit } from 'lucide-react';
+import { Users, Folder, BookOpen, Check, X, AlertTriangle, Plus, Trash2, ShieldAlert, Download, Eye, FileText, MapPin, Phone, Info, Link2, Unlink, Edit, ExternalLink } from 'lucide-react'; 
+
 const AdminDashboard = () => {
-  // FIXED: Brought in invitations and resolveCourseRequest
   const { users, projects, courses, updateUserStatus, resolveFlag, toggleUserActiveStatus, addCourse, updateCourse, deleteCourse, addUser, showToast, toggleProjectStatus, invitations, resolveCourseRequest } = useData(); 
   const { currentUser } = useAuth();
   
@@ -12,7 +13,6 @@ const AdminDashboard = () => {
   const pendingEmployers = users.filter(u => u.role === 'Employer' && u.status === 'pending_admin_approval');
   const systemUsers = users.filter(u => u.status !== 'pending_admin_approval');
   
-  // --- NEW: Filter for pending course requests ---
   const pendingCourseRequests = invitations.filter(inv => inv.type === 'course_request' && inv.status === 'pending');
 
   const [newCourseCode, setNewCourseCode] = useState('');
@@ -141,7 +141,7 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* --- NEW: Pending Course Requests --- */}
+          {/* Pending Course Requests */}
           <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
             <h3 className="text-lg font-bold text-primary mb-4 flex items-center">
                <BookOpen className="w-5 h-5 mr-2 text-blue-600" /> Pending Course Requests
@@ -229,7 +229,7 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Project Management */}
+        {/* --- UPDATED: Project Management --- */}
         <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 row-span-2">
           <h3 className="text-lg font-bold text-primary mb-6 flex items-center">
             <Folder className="w-5 h-5 mr-2" /> Project Management
@@ -243,7 +243,15 @@ const AdminDashboard = () => {
                 return (
                   <div key={proj.id} className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-3 transition-colors ${isActive ? 'bg-white border-gray-200' : 'bg-red-50 border-red-200'}`}>
                     <div>
-                      <h4 className={`font-bold text-sm ${isActive ? 'text-primary' : 'text-red-700'}`}>{proj.title}</h4>
+                      {/* Clickable link without underline */}
+                      <Link 
+                        to={`/projects/${proj.id}`}
+                        className={`font-bold text-sm hover:text-blue-600 transition-all flex items-center group w-fit ${isActive ? 'text-primary' : 'text-red-700'}`}
+                      >
+                        {proj.title}
+                        <ExternalLink className="w-3.5 h-3.5 ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </Link>
+
                       <p className="text-xs text-gray-500 mt-1">Creator: {creator?.firstName} {creator?.lastName} | Course: {courses.find(c => c.id === proj.courseId)?.code}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
@@ -316,7 +324,7 @@ const AdminDashboard = () => {
            </form>
         </div>
 
-        {/* Flagged Projects & Appeals */}
+        {/* --- UPDATED: Flagged Projects & Appeals --- */}
         <div className="bg-surface p-6 rounded-2xl shadow-sm border border-red-100 lg:col-span-2">
           <h3 className="text-lg font-bold text-red-600 mb-4 flex items-center">
             <AlertTriangle className="w-5 h-5 mr-2" /> Moderation Queue (Flagged Projects)
@@ -326,7 +334,18 @@ const AdminDashboard = () => {
               flaggedProjects.map(proj => (
                 <div key={proj.id} className="p-5 border border-red-200 bg-red-50 rounded-xl">
                   <div className="flex flex-col">
-                    <h4 className="font-bold text-lg text-primary">{proj.title}</h4>
+                    
+                    {/* Clickable title without underline */}
+                    <div className="flex items-center gap-2">
+                      <Link 
+                        to={`/projects/${proj.id}`} 
+                        className="font-bold text-lg text-primary hover:text-blue-600 transition-all flex items-center group w-fit"
+                      >
+                        {proj.title}
+                        <ExternalLink className="w-4 h-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </Link>
+                    </div>
+
                     <p className="text-sm text-red-700 mt-1"><span className="font-bold">Flag Reason:</span> {proj.flagReason}</p>
                     
                     {proj.appealMessage ? (

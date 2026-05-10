@@ -2,11 +2,14 @@
 import { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { Search, Star, ExternalLink, MapPin, BookOpen } from 'lucide-react'; // Added BookOpen icon
+import { Search, Heart, ExternalLink, MapPin, BookOpen } from 'lucide-react'; 
 import { Link } from 'react-router-dom';
 
 const PortfolioList = () => {
-  const { users, currentUser, toggleFavorite, favorites, projects, invitations } = useData();
+  // FIXED: Separated currentUser into useAuth() where it belongs!
+  const { users, toggleFavorite, favorites, projects, invitations } = useData();
+  const { currentUser } = useAuth(); 
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('All'); 
 
@@ -41,15 +44,12 @@ const PortfolioList = () => {
       if (user.role !== roleFilter) return false;
     }
 
-    // --- FIXED REQUIREMENT #8: Search Instructors by Name or Course ---
     if (searchTerm) {
       const query = searchTerm.toLowerCase();
       const fullName = `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase();
       const companyName = (user.companyName || '').toLowerCase();
       const major = (user.major || '').toLowerCase();
       const skillsMatch = user.skills?.some(s => s.toLowerCase().includes(query));
-      
-      // New: Check if the user is an instructor and teaches the searched course
       const courseMatch = user.role === 'Course Instructor' && user.linkedCourses?.some(c => c.toLowerCase().includes(query));
 
       if (!fullName.includes(query) && !companyName.includes(query) && !major.includes(query) && !skillsMatch && !courseMatch) {
@@ -108,24 +108,30 @@ const PortfolioList = () => {
           {filteredUsers.map(user => {
             const isFav = favorites.some(f => f.userId === currentUser?.id && f.itemId === user.id && f.type === 'portfolio');
             const displayName = user.role === 'Employer' ? user.companyName : `${user.firstName} ${user.lastName}`;
-
-            // Determine if we need to show extra info below the name
             const hasSubInfo = user.major || user.address || (user.role === 'Course Instructor' && user.linkedCourses?.length > 0);
 
             return (
               <div key={user.id} className="bg-surface rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all flex flex-col group relative">
                 
                 <div className="h-16 bg-gradient-to-r from-gray-100 to-gray-200 relative">
+                  {/* --- THE LIKE BUTTON --- */}
                   {currentUser && currentUser.id !== user.id && (
                     <button 
-                      onClick={() => toggleFavorite(currentUser.id, user.id, 'portfolio')}
-                      className={`absolute top-3 right-3 p-1.5 rounded-full bg-white shadow-sm transition-transform hover:scale-110 ${isFav ? 'text-yellow-500' : 'text-gray-300'}`}
-                      title={isFav ? "Remove from favorites" : "Add to favorites"}
+                      onClick={(e) => {
+                        e.preventDefault(); 
+                        // FIXED: Added currentUser.id back into the function!
+                        toggleFavorite(currentUser.id, user.id, 'portfolio'); 
+                      }}
+                      className="absolute top-3 right-3 p-2 rounded-full bg-white shadow-sm transition-all hover:scale-110 hover:shadow-md z-20 group/btn"
+                      title={isFav ? "Unlike Portfolio" : "Like Portfolio"}
                     >
-                      <span className="sr-only">
-                        {isFav ? `Remove ${displayName} from favorites` : `Add ${displayName} to favorites`}
-                      </span>
-                      <Star aria-hidden="true" className={`w-4 h-4 ${isFav ? 'fill-current' : ''}`} />
+                      <Heart 
+                        className={`w-4 h-4 transition-colors ${
+                          isFav 
+                            ? 'fill-red-500 text-red-500' 
+                            : 'text-gray-400 group-hover/btn:text-red-400' 
+                        }`} 
+                      />
                     </button>
                   )}
                 </div>
@@ -146,11 +152,10 @@ const PortfolioList = () => {
                     </h3>
                   </Link>
 
-                  {/* UI UPDATE: Show courses taught by the instructor so the search result makes sense */}
                   {hasSubInfo && (
-                    <p className="text-xs text-gray-500 font-medium mt-1 flex items-center">
-                      {user.role === 'Employer' ? <><MapPin aria-hidden="true" className="w-3 h-3 mr-1"/> {user.address}</> : 
-                       user.role === 'Course Instructor' ? <><BookOpen aria-hidden="true" className="w-3 h-3 mr-1"/> {user.linkedCourses.join(', ')}</> : 
+                    <p className="text-xs text-gray-500 font-medium mt-1 flex items-center line-clamp-1">
+                      {user.role === 'Employer' ? <><MapPin aria-hidden="true" className="w-3 h-3 mr-1 shrink-0"/> {user.address}</> : 
+                       user.role === 'Course Instructor' ? <><BookOpen aria-hidden="true" className="w-3 h-3 mr-1 shrink-0"/> {user.linkedCourses.join(', ')}</> : 
                        user.major}
                     </p>
                   )}

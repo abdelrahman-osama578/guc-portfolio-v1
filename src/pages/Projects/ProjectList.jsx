@@ -1,21 +1,33 @@
 // src/pages/Projects/ProjectList.jsx
-import { useState } from 'react';
+import { useLocation, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { Plus, Folder, Code, Eye, EyeOff, Users, AlertTriangle, Heart } from 'lucide-react'; 
 import CreateProjectForm from '../../components/projects/CreateProjectForm';
-import { Link } from 'react-router-dom';
 
 const ProjectList = () => {
   const { currentUser } = useAuth();
-  // Bring in toggleFavorite and favorites from DataContext
+  const location = useLocation();
   const { projects, courses, updateProject, showToast, invitations, toggleFavorite, favorites } = useData(); 
+  
+  // Tab State (Controlled via Sidebar navigation now)
+  const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'my_projects');
   const [showCreateForm, setShowCreateForm] = useState(false);
 
-  // Check if the current user has the right to save favorites
+  // Listen for navigation state changes from the Sidebar or Dashboard
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    } else {
+      // If no state is passed (e.g. clicking "My Projects" in sidebar), default back to my_projects
+      setActiveTab('my_projects');
+    }
+  }, [location.state, location.pathname]);
+
   const canSaveFavorites = currentUser?.role === 'Student' || currentUser?.role === 'Employer';
 
-  // Filter projects to only show ones where the user is Creator or Collaborator
+  // --- FILTER 1: My Projects ---
   const userProjects = projects.filter(p => {
     const isCreator = currentUser?.role === 'Student' && p.creatorId === currentUser?.id;
     const isCollaborator = invitations?.some(inv => 
@@ -26,9 +38,14 @@ const ProjectList = () => {
     return isCreator || isCollaborator;
   });
 
+  // --- FILTER 2: Explore (All Public Projects) ---
+  const exploreProjects = projects.filter(p => p.visibility === 'public' && p.status === 'active');
+
+  // Determine which list to show based on the active tab
+  const displayedProjects = activeTab === 'my_projects' ? userProjects : exploreProjects;
+
   const getCourseName = (id) => courses.find(c => c.id === id)?.name || 'Unknown Course';
 
-  // Toggle Visibility (Req 22)
   const handleToggleVisibility = (project) => {
     if (project.creatorId !== currentUser?.id) {
        if (showToast) showToast("Only the project creator can change visibility.", "error");
@@ -43,32 +60,38 @@ const ProjectList = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-primary">My Projects</h2>
-        {currentUser?.role === 'Student' && (
-          <button 
-            onClick={() => setShowCreateForm(!showCreateForm)}
-            className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 flex items-center transition-colors shadow-sm"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Create Project
-          </button>
-        )}
+      
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <h2 className="text-2xl font-bold text-primary flex items-center">
+          {activeTab === 'my_projects' ? 'My Projects' : 'Explore Projects'}
+        </h2>
+        
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+          {/* Create Button (Only visible on My Projects for Students) */}
+          {currentUser?.role === 'Student' && activeTab === 'my_projects' && (
+            <button 
+              onClick={() => setShowCreateForm(!showCreateForm)}
+              className="w-full sm:w-auto bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-800 flex items-center justify-center transition-colors shadow-sm"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create Project
+            </button>
+          )}
+        </div>
       </div>
 
-      {showCreateForm && <CreateProjectForm onClose={() => setShowCreateForm(false)} />}
+      {showCreateForm && activeTab === 'my_projects' && <CreateProjectForm onClose={() => setShowCreateForm(false)} />}
 
+      {/* PROJECT GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {userProjects.map(project => {
+        {displayedProjects.map(project => {
           const isCreator = project.creatorId === currentUser?.id;
-          
-          // Check if this specific project is in the user's favorites
           const isFav = favorites.some(f => f.userId === currentUser?.id && f.itemId === project.id && f.type === 'project');
 
           return (
             <div key={project.id} className={`bg-surface p-6 rounded-2xl shadow-sm border transition-shadow flex flex-col h-full relative group ${project.status === 'deactivated' ? 'border-red-200 bg-red-50 hover:shadow-md' : 'border-gray-100 hover:shadow-md'}`}>
               
-              {/* WARNING INDICATOR: If project is flagged/deactivated */}
               {project.status === 'deactivated' && (
                 <div className="absolute -top-3 -right-3 bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg flex items-center z-10">
                   <AlertTriangle className="w-3 h-3 mr-1" /> Deactivated (Flagged)
@@ -81,7 +104,6 @@ const ProjectList = () => {
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  {/* REQ 65: Favorite Toggle Button */}
                   {canSaveFavorites && (
                     <button 
                       onClick={(e) => { e.preventDefault(); toggleFavorite(currentUser.id, project.id, 'project'); }}
@@ -92,7 +114,6 @@ const ProjectList = () => {
                     </button>
                   )}
 
-                  {/* Visibility Button/Badge */}
                   {isCreator ? (
                     <button 
                       onClick={() => handleToggleVisibility(project)}
@@ -151,9 +172,9 @@ const ProjectList = () => {
           );
         })}
         
-        {userProjects.length === 0 && !showCreateForm && (
-          <div className="col-span-full py-12 text-center text-gray-500 bg-surface rounded-2xl border border-dashed border-gray-300">
-            No projects found.
+        {displayedProjects.length === 0 && (
+          <div className="col-span-full py-16 text-center text-gray-500 bg-surface rounded-3xl border border-dashed border-gray-300">
+            {activeTab === 'my_projects' ? "You don't have any projects yet." : "No public projects to explore."}
           </div>
         )}
       </div>
