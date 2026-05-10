@@ -4,6 +4,13 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { ArrowLeft, MessageSquare, Star, Folder, PlaySquare, Code, Edit, Trash2, Eye, FileText, X, Search, CheckSquare, ChevronUp, ChevronDown, User, Calendar, AlertTriangle, Flag, CheckCircle2 } from 'lucide-react';
+import CustomStatusDropdown from '../../components/portfolio/CustomStatusDropdown';
+
+const taskStatusOptions = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'post-poned', label: 'Postponed' },
+  { value: 'completed', label: 'Completed' },
+];
 
 const ProjectDetail = () => {
   const { id } = useParams();
@@ -12,7 +19,7 @@ const ProjectDetail = () => {
     projects, courses, tasks, addTask, updateTask, deleteTask, users,
     updateProject, deleteProject, rateProject, projectComments, addProjectComment, updateProjectComment, deleteProjectComment, taskComments, addTaskComment,
     invitations, sendInvitation, deleteInvitation,
-    thesisDrafts, uploadThesisDraft, setFinalDraft, showToast, flagProject, submitAppeal, confirmAction // <-- IMPORTED confirmAction
+    thesisDrafts, uploadThesisDraft, setFinalDraft, showToast, flagProject, submitAppeal, confirmAction
   } = useData();
   const { currentUser } = useAuth();
 
@@ -137,7 +144,6 @@ const ProjectDetail = () => {
     if (showToast) showToast("Project updated successfully!");
   };
 
-  // --- REQ: Updated to use Global Confirmation Dialog ---
   const handleDeleteProject = () => {
     confirmAction(
       "Are you sure you want to completely delete this project? This action cannot be undone.",
@@ -245,8 +251,12 @@ const ProjectDetail = () => {
             <div className="flex gap-2 mt-4">
               {isCreator && (
                 <>
-                  <button onClick={() => setIsEditingProj(true)} className="flex items-center text-xs font-bold bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"><Edit className="w-3.5 h-3.5 mr-1" /> Edit Project</button>
-                  <button onClick={handleDeleteProject} className="flex items-center text-xs font-bold bg-red-50 text-red-700 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-colors"><Trash2 className="w-3.5 h-3.5 mr-1" /> Delete</button>
+                  <button onClick={() => setIsEditingProj(true)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Edit Project">
+                    <Edit className="w-5 h-5" />
+                  </button>
+                  <button onClick={handleDeleteProject} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Delete">
+                    <Trash2 className="w-5 h-5" />
+                  </button>
                 </>
               )}
               {/* Flag Button */}
@@ -369,7 +379,7 @@ const ProjectDetail = () => {
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       {draft.isFinal && <span className="bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">Final Draft</span>}
-                      <button onClick={() => handleViewPdf(draft.fileData || '#')} className="flex items-center text-xs font-bold bg-blue-50 text-blue-700 px-3 py-1.5 rounded hover:bg-blue-100 transition-colors"><Eye className="w-3 h-3 mr-1" /> View</button>
+                      <button onClick={() => handleViewPdf(draft.fileData || '#')} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-all" title="View"><Eye className="w-4 h-4" /></button>
                       {isCreator && !draft.isFinal && <button onClick={() => setFinalDraft(project.id, draft.id)} className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-1.5 rounded hover:bg-purple-100 transition-colors">Mark Final</button>}
                     </div>
                   </div>
@@ -407,12 +417,12 @@ const ProjectDetail = () => {
                           {teamMembers.map(m => <option key={m.id} value={m.id}>{m.firstName} {m.lastName}</option>)}
                         </select>
                       )}
-
-                      <select value={editTaskData.status} onChange={e => setEditTaskData({ ...editTaskData, status: e.target.value })} className="border border-blue-200 p-2 rounded-lg text-sm bg-white flex-1 outline-none font-medium">
-                        <option value="pending">Pending</option>
-                        <option value="post-poned">Postponed</option>
-                        <option value="completed">Completed</option>
-                      </select>
+                      
+                      <CustomStatusDropdown 
+                        status={editTaskData.status}
+                        options={taskStatusOptions}
+                        onChange={(e) => setEditTaskData({ ...editTaskData, status: e.target.value })}
+                      />
                     </div>
                     <div className="flex gap-2 justify-end mt-2">
                       <button onClick={() => setEditingTaskId(null)} className="px-4 py-1.5 rounded-lg text-xs font-bold text-gray-600 bg-white border border-gray-300 hover:bg-gray-50">Cancel</button>
@@ -420,7 +430,7 @@ const ProjectDetail = () => {
                     </div>
                   </div>
                 ) : (
-                  <div key={task.id} className="border border-gray-100 rounded-xl overflow-hidden shadow-sm">
+                  <div key={task.id} className="border border-gray-100 rounded-xl shadow-sm">
                     <div className="flex items-center justify-between p-4 bg-gray-50 hover:bg-white transition-colors">
                       <div className="flex items-center gap-3 flex-1">
                         {isCreator && (
@@ -430,19 +440,12 @@ const ProjectDetail = () => {
                           </div>
                         )}
 
-                        <select
+                        <CustomStatusDropdown 
+                          status={task.status}
+                          options={taskStatusOptions}
                           disabled={!canEditStatus}
-                          value={task.status}
                           onChange={(e) => updateTask(task.id, { status: e.target.value })}
-                          className={`text-[10px] font-bold px-2 py-1 rounded border outline-none tracking-wider uppercase ${task.status === 'completed' ? 'bg-green-100 text-green-700 border-green-200' :
-                              task.status === 'post-poned' ? 'bg-orange-100 text-orange-700 border-orange-200' :
-                                'bg-blue-100 text-blue-700 border-blue-200'
-                            } ${!canEditStatus ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:shadow-sm transition-all'}`}
-                        >
-                          <option value="pending">Pending</option>
-                          <option value="post-poned">Postponed</option>
-                          <option value="completed">Completed</option>
-                        </select>
+                        />
 
                         <div className="flex flex-col ml-1">
                           <span className={`text-sm font-medium ${task.status === 'completed' ? 'text-gray-400 line-through' : 'text-primary'}`}>{task.description}</span>
@@ -455,8 +458,12 @@ const ProjectDetail = () => {
 
                         {isCreator && (
                           <div className="flex gap-1">
-                            <button onClick={() => { setEditingTaskId(task.id); setEditTaskData(task); }} className="p-1.5 text-blue-600 hover:bg-blue-100 rounded transition-colors" title="Edit Task"><Edit className="w-4 h-4" /></button>
-                            <button onClick={() => deleteTask(task.id)} className="p-1.5 text-red-600 hover:bg-red-100 rounded transition-colors" title="Delete Task"><Trash2 className="w-4 h-4" /></button>
+                            <button onClick={() => { setEditingTaskId(task.id); setEditTaskData(task); }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:scale-110 rounded transition-all" title="Edit Task">
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => deleteTask(task.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:scale-110 rounded transition-all" title="Delete Task">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         )}
 
@@ -521,15 +528,10 @@ const ProjectDetail = () => {
 
                       {c.instructorId === currentUser?.id && (
                         <div className="flex gap-1">
-                          <button onClick={() => { setEditingProjCommentId(c.id); setEditProjCommentText(c.text); }} className="text-blue-500 hover:text-blue-700 p-1" title="Edit">
+                          <button onClick={() => { setEditingProjCommentId(c.id); setEditProjCommentText(c.text); }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:scale-110 rounded transition-all" title="Edit Feedback">
                             <Edit className="w-3.5 h-3.5" />
                           </button>
-                          {/* --- REQ: Updated to use Global Confirmation Dialog --- */}
-                          <button 
-                            onClick={() => confirmAction("Are you sure you want to delete this feedback?", "Delete", () => deleteProjectComment(c.id))} 
-                            className="text-red-500 hover:text-red-700 p-1" 
-                            title="Delete"
-                          >
+                          <button onClick={() => confirmAction("Are you sure?", "Delete", () => deleteProjectComment(c.id))} className="p-1.5 text-gray-400 hover:text-red-600 hover:scale-110 rounded transition-all" title="Delete Feedback">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>

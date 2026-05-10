@@ -4,9 +4,30 @@ import { useLocation } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { Plus, Archive, CheckCircle2, AlertCircle, Edit, Trash2, Star, Briefcase, Eye, X, Building2, Clock, Calendar, FileText, Code } from 'lucide-react'; 
+import CustomStatusDropdown from '../../components/portfolio/CustomStatusDropdown';
+import CustomSelect from '../../components/common/CustomSelect';
+
+const applicantStatusOptions = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'nominated', label: 'Nominated' },
+  { value: 'accepted', label: 'Accepted' },
+  { value: 'rejected', label: 'Rejected' }
+];
+const filterOptions = [
+  { value: 'all', label: 'All Statuses' },
+  { value: 'suggested', label: '🌟 Suggested (Favorites)' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'nominated', label: 'Nominated' },
+  { value: 'accepted', label: 'Accepted' },
+  { value: 'rejected', label: 'Rejected' }
+];
+
+const sortOptions = [
+  { value: 'default', label: 'Default Sort' },
+  { value: 'top_contributors', label: 'Sort: Top Contributors' }
+];
 
 const ManageApplicants = () => {
-  // FIXED: Added confirmAction to this list!
   const { internships, applications, users, projects, updateApplicationStatus, addInternship, updateInternship, deleteInternship, toggleInternshipStatus, toggleArchiveInternship, favorites, showToast, confirmAction } = useData();
   const { currentUser } = useAuth();
   const location = useLocation();
@@ -14,7 +35,6 @@ const ManageApplicants = () => {
   const [showPostForm, setShowPostForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [viewArchived, setViewArchived] = useState(false);
-  
   const [selectedInternship, setSelectedInternship] = useState(null);
   
   const [formData, setFormData] = useState({ 
@@ -162,13 +182,14 @@ const ManageApplicants = () => {
                 <p className="text-xs font-bold text-red-500 uppercase tracking-wider mt-2">Deadline: {internship.deadline}</p>
               </div>
               
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1">
                 {!viewArchived && (
                   <>
-                    <button onClick={() => setSelectedInternship(internship)} className="flex items-center text-xs font-bold bg-blue-50 text-blue-700 px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors"><Eye className="w-4 h-4 mr-1"/> View</button>
-                    <button onClick={() => handleEditClick(internship)} className="flex items-center text-xs font-bold bg-gray-50 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"><Edit className="w-4 h-4 mr-1"/> Edit</button>
-                    <button onClick={() => deleteInternship(internship.id)} className="flex items-center text-xs font-bold bg-red-50 text-red-700 px-3 py-2 rounded-lg hover:bg-red-100 transition-colors"><Trash2 className="w-4 h-4 mr-1"/> Delete</button>
-                    <button onClick={() => toggleInternshipStatus(internship.id)} className="flex items-center text-xs font-bold bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+                    <button onClick={() => setSelectedInternship(internship)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="View Details"><Eye className="w-5 h-5" /></button>
+                    <button onClick={() => handleEditClick(internship)} className="p-2 text-gray-400 hover:text-primary hover:bg-gray-50 rounded-lg transition-all" title="Edit"><Edit className="w-5 h-5" /></button>
+                    <button onClick={() => deleteInternship(internship.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Delete"><Trash2 className="w-5 h-5" /></button>
+                    
+                    <button onClick={() => toggleInternshipStatus(internship.id)} className="flex items-center text-xs font-bold bg-gray-100 text-gray-700 px-3 py-2 ml-2 rounded-lg hover:bg-gray-200 transition-colors">
                       {internship.status === 'hiring' ? <><CheckCircle2 className="w-4 h-4 mr-1"/> Mark Filled</> : <><AlertCircle className="w-4 h-4 mr-1"/> Reopen</>}
                     </button>
                   </>
@@ -189,26 +210,17 @@ const ManageApplicants = () => {
             <div className="flex flex-col sm:flex-row justify-between items-center mb-4 bg-gray-50 p-3 rounded-xl border border-gray-100 gap-3">
               <span className="text-sm font-bold text-gray-700">Applicants ({internshipApps.length})</span>
               <div className="flex flex-wrap gap-2">
-                <select 
-                  className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none font-medium" 
+                <CustomSelect 
                   value={currentFilter} 
-                  onChange={(e) => setFilterStatus(prev => ({ ...prev, [internship.id]: e.target.value }))}
-                >
-                  <option value="all">All Statuses</option>
-                  <option value="suggested">🌟 Suggested (Favorites)</option>
-                  <option value="pending">Pending</option>
-                  <option value="nominated">Nominated</option>
-                  <option value="accepted">Accepted</option>
-                  <option value="rejected">Rejected</option>
-                </select>
-                <select 
-                  className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none font-medium text-blue-700 bg-blue-50" 
+                  onChange={(val) => setFilterStatus(prev => ({ ...prev, [internship.id]: val }))}
+                  options={filterOptions}
+                />
+                <CustomSelect 
                   value={currentSort} 
-                  onChange={(e) => setSortApplicants(prev => ({ ...prev, [internship.id]: e.target.value }))}
-                >
-                  <option value="default">Default Sort</option>
-                  <option value="top_contributors">Sort: Top Contributors</option>
-                </select>
+                  onChange={(val) => setSortApplicants(prev => ({ ...prev, [internship.id]: val }))}
+                  options={sortOptions}
+                  className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                />
               </div>
             </div>
 
@@ -222,7 +234,7 @@ const ManageApplicants = () => {
                   const projectCount = getStudentProjectCount(app.studentId);
 
                   return (
-                    <div key={app.id} className={`p-4 border rounded-xl transition-all ${isFav ? 'bg-yellow-50 border-yellow-200 shadow-sm' : 'bg-gray-50 border-gray-100'}`}>
+                    <div key={app.id} className={`p-4 border rounded-xl transition-all ${isFav ? 'bg-yellow-50 border-yellow-200 shadow-sm' : 'bg-white border-gray-200'}`}>
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-3">
                         <div className="flex items-center gap-3">
                           <img src={student?.profilePic} alt="" className="w-10 h-10 rounded-full border border-gray-200 object-cover" />
@@ -234,17 +246,15 @@ const ManageApplicants = () => {
                             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-0.5">Public Projects: {projectCount}</p>
                           </div>
                         </div>
-                        <select 
-                          className={`text-[10px] font-bold px-3 py-1.5 rounded-full border outline-none tracking-wider uppercase cursor-pointer transition-all
-                            ${app.status === 'pending' ? 'bg-yellow-50 text-yellow-600 border-yellow-200 hover:shadow-sm' : ''}
-                            ${app.status === 'nominated' ? 'bg-blue-50 text-blue-600 border-blue-200 hover:shadow-sm' : ''}
-                            ${app.status === 'accepted' ? 'bg-green-50 text-green-600 border-green-200 hover:shadow-sm' : ''}
-                            ${app.status === 'rejected' ? 'bg-red-50 text-red-600 border-red-200 hover:shadow-sm' : ''}
-                          `}
-                          value={app.status}
+                        
+                       {/* FIXED: Using custom confirmAction instead of native window.confirm */}
+                        <CustomStatusDropdown 
+                          status={app.status}
+                          options={applicantStatusOptions}
                           onChange={(e) => {
                             const newStatus = e.target.value;
                             if (newStatus === 'accepted' || newStatus === 'rejected') {
+                              // Use our custom global modal here!
                               confirmAction(
                                 `Are you sure you want to mark this applicant as ${newStatus.toUpperCase()}? This will instantly send an official notification to the student.`,
                                 `Yes, mark as ${newStatus}`,
@@ -254,14 +264,9 @@ const ManageApplicants = () => {
                               updateApplicationStatus(app.id, newStatus);
                             }
                           }}
-                        >
-                          <option value="pending">Pending</option>
-                          <option value="nominated">Nominated</option>
-                          <option value="accepted">Accepted</option>
-                          <option value="rejected">Rejected</option>
-                        </select>
+                        />
                       </div>
-                      <div className="text-sm text-gray-600 bg-white p-3 rounded-lg border border-gray-100 leading-relaxed shadow-inner">
+                      <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-100 leading-relaxed">
                         <span className="font-bold text-[10px] uppercase tracking-wider text-gray-400 block mb-1">Cover Letter:</span>
                         {app.coverLetter}
                       </div>
@@ -345,11 +350,9 @@ const ManageApplicants = () => {
                  </button>
                )}
             </div>
-
           </div>
         </div>
       )}
-
     </div>
   );
 };

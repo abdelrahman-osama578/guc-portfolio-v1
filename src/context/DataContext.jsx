@@ -99,8 +99,27 @@ export const DataProvider = ({ children }) => {
   };
 
   const resolveFlag = (id, deactivate) => {
+    // 1. Update the project status
     setProjects(prev => prev.map(p => p.id === id ? { ...p, isFlagged: false, status: deactivate ? 'deactivated' : 'active', flagReason: null, appealMessage: null } : p));
-    if (showToast) showToast(`Project ${deactivate ? 'deactivated permanently' : 'reactivated successfully'}.`);
+    
+    // 2. NEW: Notify the student if their project was successfully reactivated!
+    if (!deactivate) {
+      const project = projects.find(p => p.id === id);
+      if (project) {
+        const admin = users.find(u => u.role === 'Administrator') || { id: 3 };
+        setInvitations(prev => [...prev, { 
+          id: `notif${Date.now()}_${Math.random()}`, 
+          type: 'project_reactivated', 
+          projectId: project.id, 
+          senderId: admin.id, 
+          receiverId: project.creatorId, 
+          status: 'info', 
+          read: false 
+        }]);
+      }
+    }
+
+    if (showToast) showToast(`Project ${deactivate ? 'deactivated permanently' : 'reactivated successfully'}.`, deactivate ? 'error' : 'success');
   };
 
   const toggleProjectStatus = (id) => {

@@ -9,17 +9,30 @@ const Notifications = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
 
-  // --- REQ 91: Handle Mute Toggle ---
   const handleToggleMute = () => {
     updateUser(currentUser.id, { notificationsMuted: !currentUser.notificationsMuted });
   };
 
-  // --- REQ 91: Hide notifications if muted ---
   const myNotifications = currentUser?.notificationsMuted ? [] : invitations.filter(inv => inv.receiverId === currentUser?.id);
   
   const getProject = (id) => projects.find(p => p.id === id);
   const getInternship = (id) => internships.find(i => i.id === id);
   const getSender = (id) => users.find(u => u.id === id);
+
+  // Smart Navigation Handler
+  const handleActionClick = (notif) => {
+    if (!notif.read) toggleNotificationRead(notif.id);
+
+    if (notif.projectId) {
+      navigate(`/projects/${notif.projectId}`);
+    } else if (notif.type === 'new_message') {
+      navigate('/messages');
+    } else if (notif.type === 'new_application') {
+      navigate('/manage-applicants');
+    } else if (notif.type === 'application_update') {
+      navigate('/'); 
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -29,7 +42,6 @@ const Notifications = () => {
           Notifications
         </h2>
         
-        {/* --- REQ 91: Turn Off Notifications Button --- */}
         <button 
           onClick={handleToggleMute}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm border ${
@@ -73,6 +85,8 @@ const Notifications = () => {
                 messageText = <><span className="font-bold">{sender?.firstName} {sender?.lastName}</span> left feedback on a task assigned to you in <span className="font-bold text-primary">{project?.title}</span>.</>;
               } else if (notif.type === 'project_flagged') {
                 messageText = <><span className="font-bold text-red-600">ACTION REQUIRED:</span> Your project <span className="font-bold text-primary">{project?.title}</span> has been flagged and deactivated. <span className="block mt-1 text-xs text-red-500 font-bold">Reason: {notif.reason || project?.flagReason}</span></>;
+              } else if (notif.type === 'project_reactivated') {
+                messageText = <><span className="font-bold text-green-600">GOOD NEWS:</span> Administrator <span className="font-bold">{sender?.firstName}</span> has reviewed your appeal and <span className="font-bold text-green-600 uppercase">reactivated</span> your project <span className="font-bold text-primary">{project?.title}</span>.</>;
               } else if (notif.type === 'new_message') {
                  messageText = <><span className="font-bold">{sender?.firstName || sender?.companyName} {sender?.lastName || ''}</span> sent you a new private message.</>;
               } else if (notif.type === 'new_application') {
@@ -85,19 +99,33 @@ const Notifications = () => {
 
               const isMsgOrFeedback = notif.type?.includes('feedback') || notif.type === 'new_message';
               const isApplicationEvent = notif.type === 'new_application' || notif.type === 'application_update';
+              
+              // Determine if this notification has a valid destination link
+              const isActionable = notif.projectId || notif.type === 'new_message' || notif.type === 'new_application' || notif.type === 'application_update';
 
               return (
-                <div key={notif.id} className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors ${notif.read ? 'bg-white border-gray-100' : 'bg-blue-50 border-blue-100'}`}>
-                  <div className="flex items-start gap-3 flex-1">
-                    <div className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isMsgOrFeedback ? 'bg-purple-100 text-purple-600' : isApplicationEvent ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}`}>
-                      {isMsgOrFeedback ? <MessageSquare className="w-4 h-4" /> : isApplicationEvent ? <Briefcase className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+                <div key={notif.id} className={`p-5 rounded-xl border flex flex-col md:flex-row md:items-start justify-between gap-4 transition-colors ${notif.read ? 'bg-white border-gray-100' : 'bg-blue-50 border-blue-100'}`}>
+                  
+                  <div className="flex items-start gap-4 flex-1 w-full">
+                    <div className={`mt-0.5 w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${isMsgOrFeedback ? 'bg-purple-100 text-purple-600' : isApplicationEvent ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}`}>
+                      {isMsgOrFeedback ? <MessageSquare className="w-5 h-5" /> : isApplicationEvent ? <Briefcase className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
                     </div>
 
-                    <div>
-                      <p className="text-sm text-gray-800">{messageText}</p>
+                    <div className="flex-1 mt-1">
+                      {/* --- REQ: Actionable Notification Text Link --- */}
+                      {isActionable ? (
+                        <button 
+                          onClick={() => handleActionClick(notif)}
+                          className="text-sm text-gray-800 leading-relaxed text-left hover:underline hover:text-primary transition-all focus:outline-none inline"
+                        >
+                          {messageText}
+                        </button>
+                      ) : (
+                        <p className="text-sm text-gray-800 leading-relaxed inline">{messageText}</p>
+                      )}
                       
                       {notif.status !== 'info' && (
-                        <span className={`text-xs font-bold px-2 py-1 rounded-md mt-2 inline-block
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-md mt-2 block w-fit
                           ${notif.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : ''}
                           ${notif.status === 'accepted' ? 'bg-green-100 text-green-700' : ''}
                           ${notif.status === 'rejected' ? 'bg-red-100 text-red-700' : ''}
@@ -105,25 +133,13 @@ const Notifications = () => {
                           Status: {notif.status.charAt(0).toUpperCase() + notif.status.slice(1)}
                         </span>
                       )}
-
-                      {notif.type === 'new_message' && (
-                        <button onClick={() => { toggleNotificationRead(notif.id); navigate('/messages'); }} className="mt-2 text-xs font-bold text-purple-600 hover:text-purple-800 underline block">
-                           Go to Inbox
-                        </button>
-                      )}
-                      
-                      {notif.type === 'new_application' && (
-                        <button onClick={() => { toggleNotificationRead(notif.id); navigate('/manage-applicants'); }} className="mt-2 text-xs font-bold text-orange-600 hover:text-orange-800 underline block">
-                           View Applicants
-                        </button>
-                      )}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0 md:ml-4">
                     <button 
                       onClick={() => toggleNotificationRead(notif.id)} 
-                      className={`p-2 transition-colors ${notif.read ? 'text-gray-400 hover:text-gray-600' : 'text-blue-500 hover:text-blue-700'}`} 
+                      className={`p-2 rounded-full transition-colors ${notif.read ? 'text-gray-400 hover:text-gray-600 hover:bg-gray-100' : 'text-blue-500 hover:text-blue-700 hover:bg-blue-100 bg-white'}`} 
                       title={notif.read ? "Mark as unread" : "Mark as read"}
                     >
                       {notif.read ? <Mail className="w-5 h-5" /> : <MailOpen className="w-5 h-5" />}
@@ -131,11 +147,12 @@ const Notifications = () => {
                     
                     {notif.status === 'pending' && !isMsgOrFeedback && !isApplicationEvent && (
                       <>
-                        <button onClick={() => isCourseReq ? resolveCourseRequest(notif.id, 'accepted') : updateInvitationStatus(notif.id, 'accepted')} className="flex items-center bg-green-100 text-green-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors"><Check className="w-4 h-4 mr-1" /> Accept</button>
-                        <button onClick={() => isCourseReq ? resolveCourseRequest(notif.id, 'rejected') : updateInvitationStatus(notif.id, 'rejected')} className="flex items-center bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors"><X className="w-4 h-4 mr-1" /> Reject</button>
+                        <button onClick={() => isCourseReq ? resolveCourseRequest(notif.id, 'accepted') : updateInvitationStatus(notif.id, 'accepted')} className="flex items-center bg-green-100 text-green-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-200 transition-colors shadow-sm"><Check className="w-4 h-4 mr-1" /> Accept</button>
+                        <button onClick={() => isCourseReq ? resolveCourseRequest(notif.id, 'rejected') : updateInvitationStatus(notif.id, 'rejected')} className="flex items-center bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-200 transition-colors shadow-sm"><X className="w-4 h-4 mr-1" /> Reject</button>
                       </>
                     )}
                   </div>
+                  
                 </div>
               );
             })}

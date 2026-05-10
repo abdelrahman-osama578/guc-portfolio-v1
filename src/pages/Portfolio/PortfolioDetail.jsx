@@ -1,15 +1,21 @@
 // src/pages/Portfolio/PortfolioDetail.jsx
-import SkillSphere from '../../components/portfolio/SkillSphere';
-import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { ArrowLeft, Edit3, Code, Globe, Mail, Folder, MapPin, Briefcase, Calendar } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Star, Folder, PlaySquare, Code, Edit, Trash2, Eye, FileText, X, Search, CheckSquare, ChevronUp, ChevronDown, Calendar, AlertTriangle, Flag, CheckCircle2, Globe, Mail, MapPin, Briefcase, Edit3 } from 'lucide-react';
+import SkillSphere from '../../components/portfolio/SkillSphere'; // <-- IMPORT THE 3D GALAXY
 
 const PortfolioDetail = () => {
   const { id } = useParams();
-  // --- REQ 90: Bring in internships and applications from useData ---
-  const { users, projects, courses, updateUser, invitations, sendCourseRequest, internships, applications } = useData();
+  const navigate = useNavigate();
+  const {
+    projects, courses, tasks, addTask, updateTask, deleteTask, users,
+    updateProject, deleteProject, rateProject, projectComments, addProjectComment, updateProjectComment, deleteProjectComment, taskComments, addTaskComment,
+    invitations, sendInvitation, deleteInvitation,
+    thesisDrafts, uploadThesisDraft, setFinalDraft, showToast, flagProject, submitAppeal, confirmAction,
+    updateUser, sendCourseRequest, internships, applications
+  } = useData();
   const { currentUser } = useAuth();
 
   const profileUser = users.find(u => u.id === parseInt(id));
@@ -38,11 +44,11 @@ const PortfolioDetail = () => {
     return isOwnProfile || p.visibility === 'public';
   });
 
-  // --- REQ 90: Automatically extract completed (accepted) internships ---
+  // REQ 90: Automatically extract completed (accepted) internships
   const completedInternships = applications
     .filter(app => app.studentId === profileUser.id && app.status === 'accepted')
     .map(app => internships.find(i => i.id === app.internshipId))
-    .filter(Boolean); // Filter out any undefined matches
+    .filter(Boolean);
 
   const handleSaveProfile = (e) => {
     e.preventDefault();
@@ -89,16 +95,28 @@ const PortfolioDetail = () => {
             )}
           </div>
 
-          {/* Role Specific Sidebar Info */}
+          {/* --- FIXED: Text List AND 3D Galaxy for Students --- */}
           {profileUser.role === 'Student' && (
-            <div className="w-full text-left mt-2">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 text-center">
-                Interactive Skill Galaxy
-              </p>
-              <SkillSphere skills={profileUser.skills} />
-              <p className="text-[10px] text-gray-400 text-center mt-2 italic">
-                Drag to rotate • Hover to inspect
-              </p>
+            <div className="w-full text-left">
+              <h4 className="font-bold text-sm text-primary mb-2">Skills</h4>
+              <div className="flex flex-wrap gap-2 mb-6">
+                {profileUser.skills?.map(skill => (
+                  <span key={skill} className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium border border-gray-200">{skill}</span>
+                ))}
+                {(!profileUser.skills || profileUser.skills.length === 0) && <p className="text-xs text-gray-400 italic">No skills listed</p>}
+              </div>
+
+              {profileUser.skills && profileUser.skills.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 text-center">
+                    Interactive Skill Galaxy
+                  </p>
+                  <SkillSphere skills={profileUser.skills} />
+                  <p className="text-[10px] text-gray-400 text-center mt-2 italic">
+                    Drag to rotate • Hover to inspect
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -203,7 +221,7 @@ const PortfolioDetail = () => {
                   <div key={courseCode} className="flex justify-between items-center p-3 bg-gray-50 border border-gray-100 rounded-lg">
                     <span className="font-bold text-sm text-primary">{courseCode}</span>
                     {isOwnProfile && courseCode !== 'BP' && (
-                      <button onClick={() => sendCourseRequest(currentUser.id, courseCode, 'unlink')} className="text-xs text-red-500 hover:underline">
+                      <button onClick={() => confirmAction(`Request to unlink ${courseCode}?`, "Unlink", () => sendCourseRequest(currentUser.id, courseCode, 'unlink'))} className="text-xs text-red-500 hover:underline">
                         Request Unlink
                       </button>
                     )}
@@ -234,7 +252,7 @@ const PortfolioDetail = () => {
                           sendCourseRequest(currentUser.id, selectedCourse, 'link');
                           setSelectedCourse(''); 
                         } else {
-                          alert("Please select a course first.");
+                          showToast("Please select a course first.", "error");
                         }
                       }} 
                       className="bg-blue-50 text-blue-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-100"
@@ -247,7 +265,7 @@ const PortfolioDetail = () => {
             </div>
           )}
 
-          {/* --- REQ 90: Internship Experience Section for Students --- */}
+          {/* REQ 90: Internship Experience Section for Students */}
           {profileUser.role === 'Student' && completedInternships.length > 0 && (
             <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
               <h3 className="text-lg font-bold text-primary mb-6 flex items-center">
@@ -289,7 +307,7 @@ const PortfolioDetail = () => {
                         <div className="flex items-center gap-3 mb-3">
                           <div className="w-10 h-10 bg-white border border-gray-200 text-blue-600 rounded-lg flex items-center justify-center"><Folder className="w-5 h-5" /></div>
                           <div>
-                            <Link to={`/projects/${project.id}`} className="font-bold text-primary hover:text-blue-600 hover:underline">{project.title}</Link>
+                            <Link to={`/projects/${project.id}`} className="font-bold text-primary hover:text-blue-600 transition-colors">{project.title}</Link>
                             <p className="text-xs text-gray-500">{course?.name}</p>
                           </div>
                         </div>

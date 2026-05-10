@@ -9,12 +9,13 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const { login } = useAuth();
-  const { users, resetPassword } = useData(); // Bring in reset tools
+  
+  const { users, resetPassword, toast, showToast } = useData(); 
   const navigate = useNavigate();
 
   // Forgot Password Modal State
   const [showForgotModal, setShowForgotModal] = useState(false);
-  const [forgotStep, setForgotStep] = useState(1); // 1: Email, 2: OTP, 3: New Password
+  const [forgotStep, setForgotStep] = useState(1); 
   const [resetEmail, setResetEmail] = useState('');
   const [otpInput, setOtpInput] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -27,32 +28,31 @@ const Login = () => {
     else setError('Invalid email or password. Please try again.');
   };
 
-  // OTP Logic Simulation
   const handleForgotSubmit = (e) => {
     e.preventDefault();
     if (forgotStep === 1) {
-      // Check if email exists
       if (users.some(u => u.email === resetEmail)) setForgotStep(2);
-      else alert("Email not found in system.");
+      else showToast("Email not found in system.", "error"); 
     } else if (forgotStep === 2) {
-      // Hardcoded dummy OTP for testing
       if (otpInput === '1234') setForgotStep(3);
-      else alert("Invalid OTP code.");
+      else showToast("Invalid OTP code.", "error"); 
     } else if (forgotStep === 3) {
-      // Change password
       resetPassword(resetEmail, newPassword);
-      alert("Password successfully reset! You can now log in.");
+      showToast("Password successfully reset! You can now log in.", "success"); 
       setShowForgotModal(false);
       setForgotStep(1);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8 relative">
       <div className="max-w-md w-full bg-surface p-8 rounded-2xl shadow-sm space-y-8">
+        
+        {/* --- FIXED: Using Actual Image Logo --- */}
         <div>
-          <div className="mx-auto w-12 h-12 bg-primary rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-xl">GUC</span>
+          <div className="flex justify-center">
+            {/* IMPORTANT: Update this src to point exactly to your logo file! */}
+            <img src="/German_University_in_Cairo_logo.png" alt="GUC Logo" className="h-12 object-contain" />
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-primary">Sign in to your account</h2>
         </div>
@@ -62,11 +62,11 @@ const Login = () => {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email address</label>
-              <input type="email" required className="w-full px-3 py-2 border rounded-lg focus:ring-primary" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <input type="email" required className="w-full px-3 py-2 border rounded-lg focus:ring-primary outline-none" value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-              <input type="password" required className="w-full px-3 py-2 border rounded-lg focus:ring-primary" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <input type="password" required className="w-full px-3 py-2 border rounded-lg focus:ring-primary outline-none" value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
           </div>
 
@@ -74,7 +74,7 @@ const Login = () => {
             <button 
               type="button" 
               onClick={() => {
-                setResetEmail(email); // <--- ADD THIS LINE: Pre-fills the modal!
+                setResetEmail(email);
                 setShowForgotModal(true);
               }} 
               className="font-medium text-primary hover:underline"
@@ -83,7 +83,7 @@ const Login = () => {
             </button>
           </div>
 
-          <button type="submit" className="w-full flex justify-center py-2 px-4 text-sm font-medium rounded-lg text-white bg-primary hover:bg-gray-800">
+          <button type="submit" className="w-full flex justify-center py-2 px-4 text-sm font-medium rounded-lg text-white bg-primary hover:bg-gray-800 transition-colors shadow-sm">
             Sign in
           </button>
         </form>
@@ -103,7 +103,7 @@ const Login = () => {
               {forgotStep === 1 && (
                 <div>
                   <label className="block text-sm font-medium mb-1">Enter your registered email</label>
-                  <input type="email" required readOnly className="w-full px-3 py-2 border rounded-lg" value={resetEmail} onChange={e => setResetEmail(e.target.value)} />
+                  <input type="email" required readOnly className="w-full px-3 py-2 border rounded-lg outline-none" value={resetEmail} onChange={e => setResetEmail(e.target.value)} />
                 </div>
               )}
 
@@ -113,25 +113,34 @@ const Login = () => {
                     An OTP has been sent to your email. (For testing, enter: <strong>1234</strong>)
                   </div>
                   <label className="block text-sm font-medium mb-1">Enter OTP</label>
-                  <input type="text" required className="w-full px-3 py-2 border rounded-lg tracking-widest text-center text-lg" value={otpInput} onChange={e => setOtpInput(e.target.value)} />
+                  <input type="text" required className="w-full px-3 py-2 border rounded-lg tracking-widest text-center text-lg outline-none focus:ring-2 focus:ring-primary" value={otpInput} onChange={e => setOtpInput(e.target.value)} />
                 </div>
               )}
 
               {forgotStep === 3 && (
                 <div>
                   <label className="block text-sm font-medium mb-1">Enter New Password</label>
-                  <input type="password" required className="w-full px-3 py-2 border rounded-lg" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+                  <input type="password" required className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-primary" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
                 </div>
               )}
 
               <div className="flex justify-end gap-2 pt-2">
                 <button type="button" onClick={() => { setShowForgotModal(false); setForgotStep(1); }} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
-                <button type="submit" className="px-4 py-2 text-sm text-white bg-primary rounded-lg">
+                <button type="submit" className="px-4 py-2 text-sm text-white bg-primary rounded-lg hover:bg-gray-800 transition-colors shadow-sm">
                   {forgotStep === 1 ? 'Send OTP' : forgotStep === 2 ? 'Verify OTP' : 'Update Password'}
                 </button>
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* Toast UI for Login Page */}
+      {toast && (
+        <div className={`fixed bottom-8 right-8 px-6 py-3 rounded-xl shadow-lg border text-sm font-bold flex items-center gap-2 transform transition-all duration-300 translate-y-0 opacity-100 z-[100] ${
+          toast.type === 'error' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-gray-900 text-white border-gray-800'
+        }`}>
+          {toast.message}
         </div>
       )}
     </div>

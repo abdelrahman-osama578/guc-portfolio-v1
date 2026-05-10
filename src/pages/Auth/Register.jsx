@@ -11,8 +11,7 @@ const Register = () => {
     taxDocument: null, taxDocumentName: ''
   });
   
-  // Bring in 'users' so we can check for duplicates
-  const { addUser, users } = useData(); 
+  const { addUser, users, toast, showToast } = useData(); 
   const navigate = useNavigate();
 
   const handleInputChange = (e) => {
@@ -37,19 +36,16 @@ const Register = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // 1. Determine which email they are trying to register with
     const targetEmail = role === 'Employer' ? formData.companyEmail : formData.email;
 
-    // 2. DUPLICATE EMAIL CHECK
     if (users.some(u => u.email === targetEmail)) {
-      alert("This email is already registered. Please log in or use a different email.");
-      return; // Stop the registration!
+      showToast("This email is already registered. Please log in or use a different email.", "error");
+      return; 
     }
 
-    // 3. Domain Validation for GUC Users
     if (role !== 'Employer') {
       if (!formData.email.endsWith('guc.edu.eg')) {
-        alert("Registration Error: Students and Instructors must use a valid GUC email address ending in 'guc.edu.eg'.");
+        showToast("Students and Instructors must use a valid GUC email ending in 'guc.edu.eg'.", "error");
         return; 
       }
     }
@@ -76,23 +72,29 @@ const Register = () => {
     }
 
     addUser(newUser);
-    alert("Registration successful! You can now log in.");
+    showToast("Registration successful! You can now log in.", "success");
     navigate('/login');
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8 relative">
       <div className="max-w-md w-full bg-surface p-8 rounded-2xl shadow-sm space-y-6">
-        <h2 className="text-center text-3xl font-extrabold text-primary">Create an Account</h2>
         
-        <div className="flex justify-center space-x-2 bg-gray-100 p-1 rounded-lg">
+        {/* --- FIXED: Added Image Logo and adjusted title --- */}
+        <div className="flex flex-col items-center mb-4">
+          {/* IMPORTANT: Update this src to point exactly to your logo file! */}
+          <img src="/German_University_in_Cairo_logo.png" alt="GUC Logo" className="h-12 object-contain mb-6" />
+          <h2 className="text-center text-3xl font-extrabold text-primary">Create an Account</h2>
+        </div>
+        
+        <div className="flex justify-center space-x-2 bg-gray-100 p-1 rounded-xl shadow-inner">
           {['Student', 'Course Instructor', 'Employer'].map((r) => (
             <button
               key={r}
               type="button"
               onClick={() => setRole(r)}
-              className={`flex-1 py-1 px-2 text-sm font-medium rounded-md transition-colors ${
-                role === r ? 'bg-white shadow-sm text-primary' : 'text-gray-500 hover:text-primary'
+              className={`flex-1 py-1.5 px-2 text-sm font-bold rounded-lg transition-colors ${
+                role === r ? 'bg-white shadow-sm text-primary border border-gray-200' : 'text-gray-500 hover:text-primary'
               }`}
             >
               {r === 'Course Instructor' ? 'Instructor' : r}
@@ -104,15 +106,15 @@ const Register = () => {
           {role !== 'Employer' ? (
             <>
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">First Name</label><input type="text" name="firstName" required onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary sm:text-sm" /></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label><input type="text" name="lastName" required onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary sm:text-sm" /></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">First Name</label><input type="text" name="firstName" required onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-primary sm:text-sm" /></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label><input type="text" name="lastName" required onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-primary sm:text-sm" /></div>
               </div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">GUC Email</label><input type="email" name="email" required onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary sm:text-sm" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">GUC Email</label><input type="email" name="email" required onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-primary sm:text-sm" /></div>
             </>
           ) : (
             <>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label><input type="text" name="companyName" required onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary sm:text-sm" /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Company Email</label><input type="email" name="companyEmail" required onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary sm:text-sm" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label><input type="text" name="companyName" required onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-primary sm:text-sm" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Company Email</label><input type="email" name="companyEmail" required onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-primary sm:text-sm" /></div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Tax Certificate (PDF)</label>
@@ -121,9 +123,9 @@ const Register = () => {
             </>
           )}
 
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Password</label><input type="password" name="password" required onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary sm:text-sm" /></div>
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">Password</label><input type="password" name="password" required onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-primary sm:text-sm" /></div>
 
-          <button type="submit" className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-primary hover:bg-gray-800 transition-colors">
+          <button type="submit" className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-primary hover:bg-gray-800 transition-colors shadow-sm">
             Register as {role}
           </button>
         </form>
@@ -132,6 +134,15 @@ const Register = () => {
           Already have an account? <Link to="/login" className="font-medium text-primary hover:underline">Log in</Link>
         </div>
       </div>
+
+      {/* Toast UI for Register Page */}
+      {toast && (
+        <div className={`fixed bottom-8 right-8 px-6 py-3 rounded-xl shadow-lg border text-sm font-bold flex items-center gap-2 transform transition-all duration-300 translate-y-0 opacity-100 z-[100] ${
+          toast.type === 'error' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-gray-900 text-white border-gray-800'
+        }`}>
+          {toast.message}
+        </div>
+      )}
     </div>
   );
 };
