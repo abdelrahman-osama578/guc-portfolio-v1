@@ -80,34 +80,40 @@ const DashboardHome = () => {
       <div className={`grid grid-cols-1 md:grid-cols-3 ${isAdmin ? 'xl:grid-cols-5' : ''} gap-6`}>
         {currentUser?.role === 'Student' && (
           <>
-            <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-blue-200 transition-colors group">
-              <div><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Total Projects</p><h3 className="text-3xl font-bold text-primary">{userProjects.length}</h3></div>
-              <Folder className="w-8 h-8 text-blue-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+            <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-blue-200 transition-colors group relative overflow-hidden">
+              <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">01</span>
+              <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Total Projects</p><h3 className="text-3xl font-bold text-primary">{userProjects.length}</h3></div>
+              <Folder className="w-8 h-8 text-blue-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
             </div>
-            <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-green-200 transition-colors group">
-              <div><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Collaborations</p><h3 className="text-3xl font-bold text-primary">{activeCollaborations}</h3></div>
-              <Users className="w-8 h-8 text-green-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+            <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-green-200 transition-colors group relative overflow-hidden">
+              <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">02</span>
+              <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Collaborations</p><h3 className="text-3xl font-bold text-primary">{activeCollaborations}</h3></div>
+              <Users className="w-8 h-8 text-green-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
             </div>
-            <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-purple-200 transition-colors group">
-              <div><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Top Language</p><h3 className="text-2xl font-bold text-primary truncate max-w-[120px]">{languageStats.top}</h3></div>
-              <Code className="w-8 h-8 text-purple-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+            <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-purple-200 transition-colors group relative overflow-hidden">
+              <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">03</span>
+              <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Top Language</p><h3 className="text-2xl font-bold text-primary truncate max-w-[120px]">{languageStats.top}</h3></div>
+              <Code className="w-8 h-8 text-purple-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
             </div>
           </>
         )}
 
         {isEmployer && (
           <>
-            <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-orange-200 transition-colors group">
-              <div><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Internships Offered</p><h3 className="text-3xl font-bold text-primary">{totalOffered}</h3></div>
-              <Briefcase className="w-8 h-8 text-orange-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+            <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-orange-200 transition-colors group relative overflow-hidden">
+              <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">01</span>
+              <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Internships</p><h3 className="text-3xl font-bold text-primary">{totalOffered}</h3></div>
+              <Briefcase className="w-8 h-8 text-orange-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
             </div>
-            <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-green-200 transition-colors group">
-              <div><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Students Hired</p><h3 className="text-3xl font-bold text-primary">{totalHiredStudents}</h3></div>
-              <Award className="w-8 h-8 text-green-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+            <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-green-200 transition-colors group relative overflow-hidden">
+              <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">02</span>
+              <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Hired</p><h3 className="text-3xl font-bold text-primary">{totalHiredStudents}</h3></div>
+              <Award className="w-8 h-8 text-green-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
             </div>
-            <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-blue-200 transition-colors group">
-              <div><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Total Applications</p><h3 className="text-3xl font-bold text-primary">{applications.filter(a => targetInternships.some(i => i.id === a.internshipId)).length}</h3></div>
-              <BarChart3 className="w-8 h-8 text-blue-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+            <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-blue-200 transition-colors group relative overflow-hidden">
+              <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">03</span>
+              <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Applications</p><h3 className="text-3xl font-bold text-primary">{applications.filter(a => targetInternships.some(i => i.id === a.internshipId)).length}</h3></div>
+              <BarChart3 className="w-8 h-8 text-blue-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
             </div>
           </>
         )}
@@ -140,17 +146,20 @@ const DashboardHome = () => {
 
         {currentUser?.role === 'Course Instructor' && (
           <>
-            <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-purple-200 transition-colors">
-              <div><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Linked Courses</p><h3 className="text-3xl font-bold text-primary">{currentUser?.linkedCourses?.length || 0}</h3></div>
-              <BookOpen className="w-8 h-8 text-purple-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+            <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-purple-200 transition-colors relative overflow-hidden">
+              <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">01</span>
+              <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Courses</p><h3 className="text-3xl font-bold text-primary">{currentUser?.linkedCourses?.length || 0}</h3></div>
+              <BookOpen className="w-8 h-8 text-purple-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
             </div>
-            <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-blue-200 transition-colors">
-              <div><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Platform Projects</p><h3 className="text-3xl font-bold text-primary">{projects.length}</h3></div>
-              <Folder className="w-8 h-8 text-blue-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+            <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-blue-200 transition-colors relative overflow-hidden">
+              <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">02</span>
+              <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Projects</p><h3 className="text-3xl font-bold text-primary">{projects.length}</h3></div>
+              <Folder className="w-8 h-8 text-blue-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
             </div>
-            <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-yellow-200 transition-colors">
-              <div><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Pending Invites</p><h3 className="text-3xl font-bold text-primary">{invitations.filter(i => i.receiverId === currentUser.id && i.status === 'pending' && !i.type).length}</h3></div>
-              <Star className="w-8 h-8 text-yellow-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+            <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-yellow-200 transition-colors relative overflow-hidden">
+              <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">03</span>
+              <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Invites</p><h3 className="text-3xl font-bold text-primary">{invitations.filter(i => i.receiverId === currentUser.id && i.status === 'pending' && !i.type).length}</h3></div>
+              <Star className="w-8 h-8 text-yellow-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
             </div>
           </>
         )}

@@ -19,29 +19,19 @@ const Notifications = () => {
   const getInternship = (id) => internships.find(i => i.id === id);
   const getSender = (id) => users.find(u => u.id === id);
 
-  // Smart Navigation Handler
-  // Smart Navigation Handler
-  // Smart Navigation Handler
   const handleActionClick = (notif) => {
     if (!notif.read) toggleNotificationRead(notif.id);
 
-    // If it's a project flag or a course request for an Admin, send to Admin Panel
     if (currentUser?.role === 'Administrator' && (notif.type === 'project_flagged' || notif.type === 'course_request')) {
-      navigate('/admin'); // <--- Update this to your exact Admin route name
+      navigate('/admin'); 
       return;
     }
-
-    // Standard routing for everyone else
-    if (notif.projectId) {
-      navigate(`/projects/${notif.projectId}`);
-    } else if (notif.type === 'new_message') {
-      navigate('/messages');
-    } else if (notif.type === 'new_application') {
-      navigate('/manage-applicants');
-    } else if (notif.type === 'application_update') {
-      navigate('/'); 
-    }
+    if (notif.projectId) navigate(`/projects/${notif.projectId}`);
+    else if (notif.type === 'new_message') navigate('/messages');
+    else if (notif.type === 'new_application') navigate('/manage-applicants');
+    else if (notif.type === 'application_update') navigate('/'); 
   };
+  
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -77,56 +67,88 @@ const Notifications = () => {
           <p className="text-gray-500 text-center py-8">You have no new notifications.</p>
         ) : (
           <div className="space-y-4">
-            {myNotifications.map(notif => {
+            {myNotifications.reverse().map(notif => {
               const sender = getSender(notif.senderId);
               const isCourseReq = notif.type === 'course_request';
               const project = !isCourseReq && notif.projectId ? getProject(notif.projectId) : null;
               const internship = notif.type === 'new_application' || notif.type === 'application_update' ? getInternship(notif.internshipId) : null;
 
               let messageText = null;
+              
               if (notif.type === 'course_request') {
                 messageText = <><span className="font-bold">{sender?.firstName} {sender?.lastName}</span> requested to <span className="font-bold text-primary uppercase">{notif.actionType}</span> the course <span className="font-bold">{notif.courseCode}</span>.</>;
               } else if (notif.type === 'feedback_project') {
-                messageText = <><span className="font-bold">{sender?.firstName} {sender?.lastName}</span> left new instructor feedback on your project <span className="font-bold text-primary">{project?.title}</span>.</>;
+                messageText = (
+                  <>
+                    <span className="font-bold">{sender?.firstName} {sender?.lastName}</span> left new feedback on <span className="font-bold text-primary">{project?.title}</span>.
+                    {notif.text && <div className="mt-2 text-sm text-gray-600 italic border-l-2 border-purple-200 pl-3 leading-relaxed">"{notif.text}"</div>}
+                  </>
+                );
               } else if (notif.type === 'feedback_task') {
-                messageText = <><span className="font-bold">{sender?.firstName} {sender?.lastName}</span> left feedback on a task assigned to you in <span className="font-bold text-primary">{project?.title}</span>.</>;
+                messageText = (
+                  <>
+                    <span className="font-bold">{sender?.firstName} {sender?.lastName}</span> left feedback on a task in <span className="font-bold text-primary">{project?.title}</span>.
+                    {notif.text && <div className="mt-2 text-sm text-gray-600 italic border-l-2 border-purple-200 pl-3 leading-relaxed">"{notif.text}"</div>}
+                  </>
+                );
+              } else if (notif.type === 'new_task') {
+                messageText = (
+                  <>
+                    <span className="font-bold">{sender?.firstName} {sender?.lastName}</span> assigned you a new task in <span className="font-bold text-primary">{project?.title}</span>.
+                    {notif.text && <div className="mt-2 text-sm text-gray-600 italic border-l-2 border-blue-200 pl-3 leading-relaxed">"{notif.text}"</div>}
+                  </>
+                );
               } else if (notif.type === 'project_flagged') {
-                messageText = <><span className="font-bold text-red-600">ACTION REQUIRED:</span> Your project <span className="font-bold text-primary">{project?.title}</span> has been flagged and deactivated. <span className="block mt-1 text-xs text-red-500 font-bold">Reason: {notif.reason || project?.flagReason}</span></>;
+                messageText = (
+                  <>
+                    <span className="font-bold text-red-600">ACTION REQUIRED:</span> Your project <span className="font-bold text-primary">{project?.title}</span> was flagged and deactivated. 
+                    {notif.text && <div className="mt-2 text-sm text-red-600 italic border-l-2 border-red-300 pl-3 leading-relaxed">Reason: {notif.text}</div>}
+                  </>
+                );
               } else if (notif.type === 'project_reactivated') {
-                messageText = <><span className="font-bold text-green-600">GOOD NEWS:</span> Administrator <span className="font-bold">{sender?.firstName}</span> has reviewed your appeal and <span className="font-bold text-green-600 uppercase">reactivated</span> your project <span className="font-bold text-primary">{project?.title}</span>.</>;
+                messageText = <><span className="font-bold text-green-600">GOOD NEWS:</span> Administrator <span className="font-bold">{sender?.firstName}</span> reviewed your appeal and <span className="font-bold text-green-600 uppercase">reactivated</span> your project <span className="font-bold text-primary">{project?.title}</span>.</>;
               } else if (notif.type === 'new_message') {
-                messageText = <><span className="font-bold">{sender?.firstName || sender?.companyName} {sender?.lastName || ''}</span> sent you a new private message.</>;
+                messageText = (
+                  <>
+                    <span className="font-bold">{sender?.firstName || sender?.companyName} {sender?.lastName || ''}</span> sent a private message.
+                    {notif.text && <div className="mt-2 text-sm text-gray-600 italic border-l-2 border-blue-200 pl-3 leading-relaxed">"{notif.text}"</div>}
+                  </>
+                );
               } else if (notif.type === 'new_application') {
-                messageText = <><span className="font-bold">{sender?.firstName} {sender?.lastName}</span> submitted an application for your <span className="font-bold text-primary">{internship?.title}</span> position.</>;
+                messageText = <><span className="font-bold">{sender?.firstName} {sender?.lastName}</span> applied for <span className="font-bold text-primary">{internship?.title}</span>.</>;
               } else if (notif.type === 'application_update') {
-                messageText = <>Your application for the <span className="font-bold text-primary">{internship?.title}</span> role at <span className="font-bold">{internship?.companyName}</span> was <span className={`font-bold uppercase ${notif.appStatus === 'accepted' ? 'text-green-600' : 'text-red-600'}`}>{notif.appStatus}</span>.</>;
+                messageText = <>Your application for <span className="font-bold text-primary">{internship?.title}</span> at <span className="font-bold">{internship?.companyName}</span> was <span className={`font-bold uppercase ${notif.appStatus === 'accepted' ? 'text-green-600' : 'text-red-600'}`}>{notif.appStatus}</span>.</>;
               } else {
                 messageText = <><span className="font-bold">{sender?.firstName} {sender?.lastName}</span> invited you to collaborate on <span className="font-bold text-primary">{project?.title}</span>.</>;
               }
 
               const isMsgOrFeedback = notif.type?.includes('feedback') || notif.type === 'new_message';
               const isApplicationEvent = notif.type === 'new_application' || notif.type === 'application_update';
+              const isTask = notif.type === 'new_task';
+              const isActionable = notif.projectId || notif.type === 'new_message' || notif.type === 'new_application' || notif.type === 'application_update' || (currentUser?.role === 'Administrator' && (notif.type === 'course_request' || notif.type === 'project_flagged'));
 
-              // Determine if this notification has a valid destination link
-const isActionable = notif.projectId || notif.type === 'new_message' || notif.type === 'new_application' || notif.type === 'application_update' || (currentUser?.role === 'Administrator' && (notif.type === 'course_request' || notif.type === 'project_flagged'));              return (
-                <div key={notif.id} className={`p-5 rounded-xl border flex flex-col md:flex-row md:items-start justify-between gap-4 transition-colors ${notif.read ? 'bg-white border-gray-100' : 'bg-blue-50 border-blue-100'}`}>
+              return (
+                <div key={notif.id} className={`p-5 rounded-xl border flex flex-col md:flex-row md:items-start justify-between gap-4 transition-colors ${notif.read ? 'bg-white border-gray-100' : 'bg-blue-50/30 border-blue-100'}`}>
 
                   <div className="flex items-start gap-4 flex-1 w-full">
                     <div className={`mt-0.5 w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${isMsgOrFeedback ? 'bg-purple-100 text-purple-600' : isApplicationEvent ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}`}>
-                      {isMsgOrFeedback ? <MessageSquare className="w-5 h-5" /> : isApplicationEvent ? <Briefcase className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
+                      {isMsgOrFeedback ? <MessageSquare className="w-5 h-5" /> : isApplicationEvent ? <Briefcase className="w-5 h-5" /> : isTask ? <Check className="w-5 h-5"/> : <Bell className="w-5 h-5" />}
                     </div>
 
                     <div className="flex-1 mt-1">
-                      {/* --- REQ: Actionable Notification Text Link --- */}
                       {isActionable ? (
-                        <button
-                          onClick={() => handleActionClick(notif)}
-                          className="text-sm text-gray-800 leading-relaxed text-left hover:underline hover:text-primary transition-all focus:outline-none inline"
-                        >
+                        <button onClick={() => handleActionClick(notif)} className="text-sm text-gray-800 leading-relaxed text-left hover:text-blue-600 transition-colors focus:outline-none block w-full">
                           {messageText}
                         </button>
                       ) : (
-                        <p className="text-sm text-gray-800 leading-relaxed inline">{messageText}</p>
+                        <div className="text-sm text-gray-800 leading-relaxed block w-full">{messageText}</div>
+                      )}
+
+                      {/* --- THE TIME TAG (Globally applied here) --- */}
+                      {notif.time && (
+                        <span className="block mt-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                          {notif.time}
+                        </span>
                       )}
 
                       {notif.status !== 'info' && (
@@ -144,20 +166,19 @@ const isActionable = notif.projectId || notif.type === 'new_message' || notif.ty
                   <div className="flex items-center gap-2 shrink-0 md:ml-4">
                     <button
                       onClick={() => toggleNotificationRead(notif.id)}
-                      className={`p-2 rounded-full transition-colors ${notif.read ? 'text-gray-400 hover:text-gray-600 hover:bg-gray-100' : 'text-blue-500 hover:text-blue-700 hover:bg-blue-100 bg-white'}`}
+                      className={`p-2 rounded-full transition-colors ${notif.read ? 'text-gray-400 hover:text-gray-600 hover:bg-gray-100' : 'text-blue-500 hover:text-blue-700 hover:bg-blue-100 bg-white shadow-sm'}`}
                       title={notif.read ? "Mark as unread" : "Mark as read"}
                     >
                       {notif.read ? <Mail className="w-5 h-5" /> : <MailOpen className="w-5 h-5" />}
                     </button>
 
-                    {notif.status === 'pending' && !isMsgOrFeedback && !isApplicationEvent && (
+                    {notif.status === 'pending' && !isMsgOrFeedback && !isApplicationEvent && !isTask && (
                       <>
                         <button onClick={() => isCourseReq ? resolveCourseRequest(notif.id, 'accepted') : updateInvitationStatus(notif.id, 'accepted')} className="flex items-center bg-green-100 text-green-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-200 transition-colors shadow-sm"><Check className="w-4 h-4 mr-1" /> Accept</button>
                         <button onClick={() => isCourseReq ? resolveCourseRequest(notif.id, 'rejected') : updateInvitationStatus(notif.id, 'rejected')} className="flex items-center bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-200 transition-colors shadow-sm"><X className="w-4 h-4 mr-1" /> Reject</button>
                       </>
                     )}
                   </div>
-
                 </div>
               );
             })}

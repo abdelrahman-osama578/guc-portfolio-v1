@@ -37,15 +37,10 @@ export const DataProvider = ({ children }) => {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // --- REQ: Custom Confirmation Function ---
   const confirmAction = (message, confirmText = "Confirm", onConfirmCallback) => {
     setConfirmDialog({
-      message,
-      confirmText,
-      onConfirm: () => {
-        onConfirmCallback();
-        setConfirmDialog(null);
-      },
+      message, confirmText,
+      onConfirm: () => { onConfirmCallback(); setConfirmDialog(null); },
       onCancel: () => setConfirmDialog(null)
     });
   };
@@ -99,10 +94,7 @@ export const DataProvider = ({ children }) => {
     setProjects(projects.map(p => {
       if (p.id === projectId) {
         const currentRatings = p.ratings || [];
-        const updatedRatings = [
-          ...currentRatings.filter(r => r.instructorId !== instructorId),
-          { instructorId, score }
-        ];
+        const updatedRatings = [...currentRatings.filter(r => r.instructorId !== instructorId), { instructorId, score }];
         const totalScore = updatedRatings.reduce((sum, r) => sum + r.score, 0);
         const averageRating = totalScore / updatedRatings.length;
         return { ...p, ratings: updatedRatings, rating: Math.round(averageRating) };
@@ -116,7 +108,7 @@ export const DataProvider = ({ children }) => {
     const project = projects.find(p => p.id === projectId);
     if (project) {
       const admin = users.find(u => u.role === 'Administrator') || { id: 3 };
-      setInvitations(prev => [...prev, { id: `notif${Date.now()}`, type: 'project_flagged', projectId: projectId, senderId: admin.id, receiverId: project.creatorId, status: 'info', read: false, reason: reason }]);
+      setInvitations(prev => [...prev, { id: `notif${Date.now()}`, type: 'project_flagged', projectId: projectId, senderId: admin.id, receiverId: project.creatorId, status: 'info', read: false, text: reason, time: getNow() }]);
     }
     if (showToast) showToast("Project flagged and deactivated.", "error");
   };
@@ -127,7 +119,6 @@ export const DataProvider = ({ children }) => {
   };
 
   const resolveFlag = (id, deactivate) => {
-    // 1. Update the project status
     setProjects(prev => prev.map(p => p.id === id ? { ...p, isFlagged: false, status: deactivate ? 'deactivated' : 'active', flagReason: null, appealMessage: null } : p));
 
     // 2. NEW: Notify the student if their project was successfully reactivated!
@@ -146,7 +137,6 @@ export const DataProvider = ({ children }) => {
         }]);
       }
     }
-
     if (showToast) showToast(`Project ${deactivate ? 'deactivated permanently' : 'reactivated successfully'}.`, deactivate ? 'error' : 'success');
   };
 
@@ -167,7 +157,21 @@ export const DataProvider = ({ children }) => {
   };
   const setFinalDraft = (projectId, draftId) => setThesisDrafts(thesisDrafts.map(d => d.projectId === projectId ? { ...d, isFinal: d.id === draftId } : d));
 
-  const addTask = (t) => setTasks([...tasks, { ...t, id: `t${Date.now()}` }]);
+  // --- MISSING NOTIFICATION ADDED HERE ---
+  const addTask = (t) => {
+    const newId = `t${Date.now()}`;
+    setTasks([...tasks, { ...t, id: newId }]);
+
+    // Notify Assignee if they didn't create the task
+    const project = projects.find(p => p.id === t.projectId);
+    if (project && t.assigneeId !== project.creatorId) {
+      setInvitations(prev => [...prev, {
+        id: `notif${Date.now()}_task`, type: 'new_task', projectId: t.projectId, taskId: newId,
+        senderId: project.creatorId, receiverId: t.assigneeId, status: 'info', read: false, text: t.description, time: getNow()
+      }]);
+    }
+  };
+
   const updateTask = (id, updatedData) => setTasks(prevTasks => prevTasks.map(t => t.id === id ? { ...t, ...updatedData } : t));
   const deleteTask = (id) => setTasks(tasks.filter(t => t.id !== id));
   const toggleTaskStatus = (id) => setTasks(tasks.map(t => t.id === id ? { ...t, status: t.status === 'pending' ? 'completed' : 'pending' } : t));
@@ -177,16 +181,32 @@ export const DataProvider = ({ children }) => {
     setTaskComments([...taskComments, { ...c, id: `tc${taskComments.length + 1}`, date: localDate }]);
     const task = tasks.find(t => t.id === c.taskId);
     if (task) {
-      setInvitations(prev => [...prev, { id: `notif${Date.now()}`, type: 'feedback_task', projectId: task.projectId, taskId: task.id, senderId: c.instructorId, receiverId: task.assigneeId, status: 'info', read: false }]);
+      const project = projects.find(p => p.id === task.projectId);
+      const receivers = [...new Set([task.assigneeId, project?.creatorId])].filter(Boolean);
+      const newNotifs = receivers.map(rId => ({
+        id: `notif${Date.now()}_${Math.random()}`, type: 'feedback_task', projectId: task.projectId, taskId: task.id,
+        senderId: c.instructorId, receiverId: rId, status: 'info', read: false, text: c.text, time: getNow()
+      }));
+      setInvitations(prev => [...prev, ...newNotifs]);
     }
   };
+
+  // --- MISSING FUNCTIONS ADDED HERE ---
+  const updateTaskComment = (id, newText) => setTaskComments(taskComments.map(c => c.id === id ? { ...c, text: newText } : c));
+  const deleteTaskComment = (id) => setTaskComments(taskComments.filter(c => c.id !== id));
 
   const addProjectComment = (c) => {
     const localDate = new Date().toLocaleDateString('en-CA');
     setProjectComments([...projectComments, { ...c, id: `pc${projectComments.length + 1}`, date: localDate }]);
     const project = projects.find(p => p.id === c.projectId);
     if (project) {
-      setInvitations(prev => [...prev, { id: `notif${Date.now()}`, type: 'feedback_project', projectId: project.id, senderId: c.instructorId, receiverId: project.creatorId, status: 'info', read: false }]);
+      const acceptedInvites = invitations.filter(inv => inv.projectId === project.id && inv.status === 'accepted');
+      const receivers = [...new Set([project.creatorId, ...acceptedInvites.map(inv => inv.receiverId)])];
+      const newNotifs = receivers.map(rId => ({
+        id: `notif${Date.now()}_${Math.random()}`, type: 'feedback_project', projectId: project.id,
+        senderId: c.instructorId, receiverId: rId, status: 'info', read: false, text: c.text, time: getNow()
+      }));
+      setInvitations(prev => [...prev, ...newNotifs]);
     }
   };
   const updateProjectComment = (id, newText) => setProjectComments(projectComments.map(c => c.id === id ? { ...c, text: newText } : c));
@@ -208,16 +228,12 @@ export const DataProvider = ({ children }) => {
   const toggleInternshipStatus = (id) => setInternships(internships.map(i => i.id === id ? { ...i, status: i.status === 'hiring' ? 'filled' : 'hiring' } : i));
   const toggleArchiveInternship = (id) => setInternships(internships.map(i => i.id === id ? { ...i, isArchived: !i.isArchived } : i));
 
-  // --- REQ 89: Application logic + Notification to Employer & Student ---
   const addApplication = (a) => {
     setApplications([...applications, { ...a, id: `app${Date.now()}`, status: 'pending' }]);
     const internship = internships.find(i => i.id === a.internshipId);
     const employer = users.find(u => u.companyName === internship?.companyName);
     if (employer) {
-      setInvitations(prev => [...prev, {
-        id: `notif${Date.now()}`, type: 'new_application', internshipId: internship.id,
-        senderId: a.studentId, receiverId: employer.id, status: 'info', read: false
-      }]);
+      setInvitations(prev => [...prev, { id: `notif${Date.now()}`, type: 'new_application', internshipId: internship.id, senderId: a.studentId, receiverId: employer.id, status: 'info', read: false, time: getNow() }]);
     }
     if (showToast) showToast("Application submitted successfully!");
   };
@@ -228,10 +244,7 @@ export const DataProvider = ({ children }) => {
       if (app) {
         const internship = internships.find(i => i.id === app.internshipId);
         const employer = users.find(u => u.companyName === internship?.companyName);
-        setInvitations(prev => [...prev, {
-          id: `notif${Date.now()}_${Math.random()}`, type: 'application_update', internshipId: internship?.id,
-          senderId: employer?.id || 3, receiverId: app.studentId, status: 'info', appStatus: s, read: false
-        }]);
+        setInvitations(prev => [...prev, { id: `notif${Date.now()}_${Math.random()}`, type: 'application_update', internshipId: internship?.id, senderId: employer?.id || 3, receiverId: app.studentId, status: 'info', appStatus: s, read: false, time: getNow() }]);
         if (showToast) showToast(`Applicant ${s} and notified!`, s === 'accepted' ? 'success' : 'info');
       }
     }
@@ -243,7 +256,7 @@ export const DataProvider = ({ children }) => {
       if (showToast) showToast("This user has already been invited.", "error");
       return;
     }
-    setInvitations([...invitations, { id: `inv${Date.now()}`, projectId: pId, senderId: sId, receiverId: rId, status: 'pending', read: false }]);
+    setInvitations([...invitations, { id: `inv${Date.now()}`, projectId: pId, senderId: sId, receiverId: rId, status: 'pending', read: false, time: getNow() }]);
     if (showToast) showToast("Invitation sent!");
   };
 
@@ -259,7 +272,7 @@ export const DataProvider = ({ children }) => {
     }
     const admin = users.find(u => u.role === 'Administrator');
     if (!admin) return;
-    setInvitations(prev => [...prev, { id: `req${Date.now()}`, type: 'course_request', actionType, courseCode, senderId, receiverId: admin.id, status: 'pending', read: false }]);
+    setInvitations(prev => [...prev, { id: `req${Date.now()}`, type: 'course_request', actionType, courseCode, senderId, receiverId: admin.id, status: 'pending', read: false, time: getNow() }]);
     if (showToast) showToast(`${actionType === 'link' ? 'Link' : 'Unlink'} request sent to Administrator!`);
   };
 
@@ -292,7 +305,7 @@ export const DataProvider = ({ children }) => {
     const now = new Date();
     const timestamp = `${now.toLocaleDateString('en-CA')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     setMessages([...messages, { id: `m${Date.now()}`, senderId, receiverId, text, timestamp, read: false }]);
-    setInvitations(prev => [...prev, { id: `notif${Date.now()}`, type: 'new_message', senderId: senderId, receiverId: receiverId, status: 'info', read: false }]);
+    setInvitations(prev => [...prev, { id: `notif${Date.now()}`, type: 'new_message', senderId: senderId, receiverId: receiverId, status: 'info', read: false, text: text, time: getNow() }]);
   };
 
   const markMessagesRead = (receiverId, senderId) => setMessages(messages.map(m => (m.receiverId === receiverId && m.senderId === senderId) ? { ...m, read: true } : m));
@@ -309,13 +322,13 @@ export const DataProvider = ({ children }) => {
       internships, addInternship, updateInternship, deleteInternship, toggleInternshipStatus, toggleArchiveInternship,
       tasks, addTask, toggleTaskStatus, updateTask, deleteTask,
       applications, addApplication, updateApplicationStatus,
-      projectComments, addProjectComment, updateProjectComment, deleteProjectComment, taskComments, addTaskComment,
+      projectComments, addProjectComment, updateProjectComment, deleteProjectComment,
+      taskComments, addTaskComment, updateTaskComment, deleteTaskComment, // <-- EXPORTED FIX
       invitations, sendInvitation, updateInvitationStatus, deleteInvitation, toggleNotificationRead,
       sendCourseRequest, resolveCourseRequest,
       favorites, toggleFavorite,
       messages, sendMessage, markMessagesRead, markMessageNotificationsRead,
-      toast, showToast,
-      confirmDialog, confirmAction // <-- NEW MODAL STATE EXPORTED
+      toast, showToast, confirmDialog, confirmAction
     }}>
       {children}
     </DataContext.Provider>

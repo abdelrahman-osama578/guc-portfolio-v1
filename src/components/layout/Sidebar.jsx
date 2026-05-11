@@ -1,11 +1,11 @@
 // src/components/layout/Sidebar.jsx
-import { Link, useLocation } from 'react-router-dom'; // FIXED: Switched NavLink to Link and added useLocation
-import { Home, Folder, Users, ShoppingBag, Shield, Heart, MessageSquare, BookOpen, Briefcase, Globe } from 'lucide-react'; // Added Globe icon for Explore
+import { Link, useLocation } from 'react-router-dom'; 
+import { Home, Folder, Users, ShoppingBag, Shield, Heart, MessageSquare, BookOpen, Briefcase, Globe } from 'lucide-react'; 
 import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = () => {
   const { currentUser, logout } = useAuth();
-  const location = useLocation(); // Allows us to read the current URL and hidden state
+  const location = useLocation(); 
 
   // Define which links belong to which roles
   const navItems = [
@@ -13,17 +13,12 @@ const Sidebar = () => {
     { name: 'My Projects', path: '/projects', icon: Folder, roles: ['Student', 'Course Instructor'] },
     { name: 'Portfolios', path: '/portfolios', icon: Users, roles: ['Student', 'Employer', 'Course Instructor', 'Administrator'] },
     { name: 'Courses', path: '/courses', icon: BookOpen, roles: ['Course Instructor', 'Administrator'] },
-    
-    // REQ 79: Students get the Explore view
     { name: 'Explore Internships', path: '/internships', icon: ShoppingBag, roles: ['Student'] },
-    
-    // REQ 85: Employers get the Management hub
     { name: 'My Internships', path: '/manage-applicants', icon: Briefcase, roles: ['Employer'] }, 
-    
     { name: 'Admin Panel', path: '/admin', icon: Shield, roles: ['Administrator'] },
     
-    // FIXED: Point to /projects but pass the explore state!
-    { name: 'Explore Projects', path: '/projects', state: { activeTab: 'explore' }, icon: Globe, roles: ['Student', 'Employer', 'Course Instructor', 'Administrator'] },
+    // FIXED: Explore now points directly to the dedicated /explore page!
+    { name: 'Explore Projects', path: '/explore', icon: Globe, roles: ['Student', 'Employer', 'Course Instructor', 'Administrator'] },
     
     { name: 'Favorites', path: '/favorites', icon: Heart, roles: ['Student', 'Employer'] },
     { name: 'Messages', path: '/messages', icon: MessageSquare, roles: ['Student', 'Course Instructor', 'Employer', 'Administrator'] }
@@ -43,20 +38,11 @@ const Sidebar = () => {
 
       <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
         {visibleLinks.map((item) => {
-          // --- SMART HIGHLIGHTING LOGIC ---
+          // Clean standard routing logic
           let isActive = false;
-
-          if (item.name === 'My Projects') {
-            // Active ONLY if on /projects AND state is NOT explore
-            isActive = location.pathname === '/projects' && location.state?.activeTab !== 'explore';
-          } else if (item.name === 'Explore Projects') {
-            // Active ONLY if on /projects AND state IS explore
-            isActive = location.pathname === '/projects' && location.state?.activeTab === 'explore';
-          } else if (item.path === '/') {
-            // Exact match for dashboard
+          if (item.path === '/') {
             isActive = location.pathname === '/';
           } else {
-            // Standard prefix matching for everything else
             isActive = location.pathname.startsWith(item.path);
           }
 
@@ -64,7 +50,6 @@ const Sidebar = () => {
             <Link
               key={item.name}
               to={item.path}
-              state={item.state} // Passes the hidden state if the item has one
               className={`flex items-center px-4 py-3 rounded-xl transition-colors ${
                 isActive 
                   ? 'bg-gray-100 text-primary font-bold shadow-sm' 

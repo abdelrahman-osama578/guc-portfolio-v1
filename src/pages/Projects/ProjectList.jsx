@@ -1,48 +1,57 @@
 // src/pages/Projects/ProjectList.jsx
-import { useLocation, Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { Plus, Folder, Code, Eye, EyeOff, Users, AlertTriangle, Heart } from 'lucide-react'; 
+import { Plus, Folder, Code, Eye, EyeOff, Users, AlertTriangle, Heart, Search, Filter, BookOpen, ArrowUpDown } from 'lucide-react'; 
 import CreateProjectForm from '../../components/projects/CreateProjectForm';
+import { Link } from 'react-router-dom';
 
 const ProjectList = () => {
   const { currentUser } = useAuth();
-  const location = useLocation();
   const { projects, courses, updateProject, showToast, invitations, toggleFavorite, favorites } = useData(); 
   
-  // Tab State (Controlled via Sidebar navigation now)
-  const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'my_projects');
   const [showCreateForm, setShowCreateForm] = useState(false);
 
-  // Listen for navigation state changes from the Sidebar or Dashboard
-  useEffect(() => {
-    if (location.state?.activeTab) {
-      setActiveTab(location.state.activeTab);
-    } else {
-      // If no state is passed (e.g. clicking "My Projects" in sidebar), default back to my_projects
-      setActiveTab('my_projects');
-    }
-  }, [location.state, location.pathname]);
+  // --- FULL FILTER ENGINE STATES ---
+  const [searchQuery, setSearchQuery] = useState('');
+  const [courseFilter, setCourseFilter] = useState('');
+  const [visibilityFilter, setVisibilityFilter] = useState('');
+  const [startDateFilter, setStartDateFilter] = useState(''); 
+  const [endDateFilter, setEndDateFilter] = useState('');     
+  const [sortOption, setSortOption] = useState('newest'); 
 
   const canSaveFavorites = currentUser?.role === 'Student' || currentUser?.role === 'Employer';
 
-  // --- FILTER 1: My Projects ---
+  // 1. Get Base User Projects
   const userProjects = projects.filter(p => {
     const isCreator = currentUser?.role === 'Student' && p.creatorId === currentUser?.id;
     const isCollaborator = invitations?.some(inv => 
-      inv.projectId === p.id && 
-      inv.receiverId === currentUser?.id && 
-      inv.status === 'accepted'
+      inv.projectId === p.id && inv.receiverId === currentUser?.id && inv.status === 'accepted'
     );
     return isCreator || isCollaborator;
   });
 
-  // --- FILTER 2: Explore (All Public Projects) ---
-  const exploreProjects = projects.filter(p => p.visibility === 'public' && p.status === 'active');
+  // 2. Apply Filters
+  const filteredProjects = userProjects.filter(project => {
+    if (searchQuery && !project.title.toLowerCase().includes(searchQuery.toLowerCase()) && !project.languages?.some(l => l.toLowerCase().includes(searchQuery.toLowerCase()))) return false;
+    if (courseFilter && project.courseId !== courseFilter) return false;
+    if (visibilityFilter && project.visibility !== visibilityFilter) return false;
+    if (startDateFilter && project.creationDate < startDateFilter) return false;
+    if (endDateFilter && project.creationDate > endDateFilter) return false;
+    return true;
+  });
 
-  // Determine which list to show based on the active tab
-  const displayedProjects = activeTab === 'my_projects' ? userProjects : exploreProjects;
+  // 3. Apply Sorting (FIXED: Using exact timestamp for precision, fallback to date string)
+  const sortedProjects = [...filteredProjects].sort((a, b) => {
+    const timeA = a.timestamp || new Date(a.creationDate).getTime();
+    const timeB = b.timestamp || new Date(b.creationDate).getTime();
+
+    if (sortOption === 'newest') return timeB - timeA; 
+    if (sortOption === 'oldest') return timeA - timeB; 
+    if (sortOption === 'a-z') return a.title.localeCompare(b.title);
+    if (sortOption === 'z-a') return b.title.localeCompare(a.title);
+    return 0;
+  });
 
   const getCourseName = (id) => courses.find(c => c.id === id)?.name || 'Unknown Course';
 
@@ -63,34 +72,86 @@ const ProjectList = () => {
       
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h2 className="text-2xl font-bold text-primary flex items-center">
-          {activeTab === 'my_projects' ? 'My Projects' : 'Explore Projects'}
-        </h2>
+        <h2 className="text-2xl font-bold text-primary flex items-center">My Projects</h2>
         
-        <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
-          {/* Create Button (Only visible on My Projects for Students) */}
-          {currentUser?.role === 'Student' && activeTab === 'my_projects' && (
-            <button 
-              onClick={() => setShowCreateForm(!showCreateForm)}
-              className="w-full sm:w-auto bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-800 flex items-center justify-center transition-colors shadow-sm"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create Project
-            </button>
-          )}
+        {currentUser?.role === 'Student' && (
+          <button 
+            onClick={() => setShowCreateForm(!showCreateForm)}
+            className="w-full sm:w-auto bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-800 flex items-center justify-center transition-colors shadow-sm"
+          >
+            <Plus className="w-4 h-4 mr-2" /> Create Project
+          </button>
+        )}
+      </div>
+
+      {showCreateForm && <CreateProjectForm onClose={() => setShowCreateForm(false)} />}
+
+      {/* --- ADVANCED 3x2 FILTER GRID --- */}
+      <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between mb-5 border-b border-gray-50 pb-3">
+          <div className="flex items-center gap-2">
+            <Filter className="w-5 h-5 text-blue-600" />
+            <h3 className="text-sm font-bold text-gray-800">Filter & Sort Projects</h3>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* Row 1 */}
+          <div className="relative">
+            <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" />
+            <input type="text" placeholder="Search title or language..." className="w-full text-sm border border-gray-200 rounded-xl pl-10 pr-3 py-3 bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-primary transition-all" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+          </div>
+          
+          <div className="relative">
+            <BookOpen className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" />
+            <select className="w-full text-sm border border-gray-200 rounded-xl pl-10 pr-3 py-3 bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer" value={courseFilter} onChange={(e) => setCourseFilter(e.target.value)}>
+              <option value="">All Courses</option>
+              {courses.map(c => <option key={c.id} value={c.id}>{c.code} - {c.name}</option>)}
+            </select>
+          </div>
+          
+          <div className="relative">
+            <Eye className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" />
+            <select className="w-full text-sm border border-gray-200 rounded-xl pl-10 pr-3 py-3 bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer" value={visibilityFilter} onChange={(e) => setVisibilityFilter(e.target.value)}>
+              <option value="">All Visibilities</option>
+              <option value="public">Public</option>
+              <option value="private">Private</option>
+            </select>
+          </div>
+
+          {/* Row 2 */}
+          <div className="relative">
+            <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[10px] font-bold text-gray-400 uppercase tracking-wider pointer-events-none">From</span>
+            <input type="date" className="w-full text-sm border border-gray-200 rounded-xl pl-14 pr-8 py-3 bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-primary text-gray-600 cursor-pointer" value={startDateFilter} onChange={(e) => setStartDateFilter(e.target.value)} />
+            {startDateFilter && <button onClick={() => setStartDateFilter('')} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[10px] text-red-500 font-bold hover:underline bg-gray-50 px-1 rounded">X</button>}
+          </div>
+          
+          <div className="relative">
+            <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[10px] font-bold text-gray-400 uppercase tracking-wider pointer-events-none">To</span>
+            <input type="date" className="w-full text-sm border border-gray-200 rounded-xl pl-10 pr-8 py-3 bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-primary text-gray-600 cursor-pointer" value={endDateFilter} onChange={(e) => setEndDateFilter(e.target.value)} />
+            {endDateFilter && <button onClick={() => setEndDateFilter('')} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[10px] text-red-500 font-bold hover:underline bg-gray-50 px-1 rounded">X</button>}
+          </div>
+          
+          <div className="relative">
+            <ArrowUpDown className="w-4 h-4 text-blue-500 absolute left-4 top-1/2 transform -translate-y-1/2" />
+            <select className="w-full text-sm border border-blue-200 rounded-xl pl-10 pr-3 py-3 bg-blue-50 focus:bg-white outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-bold text-blue-800" value={sortOption} onChange={(e) => setSortOption(e.target.value)}>
+              <option value="newest">Sort: Newest First</option>
+              <option value="oldest">Sort: Oldest First</option>
+              <option value="a-z">Sort: A to Z</option>
+              <option value="z-a">Sort: Z to A</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      {showCreateForm && activeTab === 'my_projects' && <CreateProjectForm onClose={() => setShowCreateForm(false)} />}
-
       {/* PROJECT GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {displayedProjects.map(project => {
+        {sortedProjects.map(project => {
           const isCreator = project.creatorId === currentUser?.id;
           const isFav = favorites.some(f => f.userId === currentUser?.id && f.itemId === project.id && f.type === 'project');
-
+          
           return (
-            <div key={project.id} className={`bg-surface p-6 rounded-2xl shadow-sm border transition-shadow flex flex-col h-full relative group ${project.status === 'deactivated' ? 'border-red-200 bg-red-50 hover:shadow-md' : 'border-gray-100 hover:shadow-md'}`}>
+            <div key={project.id} className={`glass-card bg-surface p-6 rounded-2xl shadow-sm border transition-all flex flex-col h-full relative group ${project.status === 'deactivated' ? 'border-red-200 bg-red-50 hover:shadow-md' : 'border-gray-100 hover:shadow-md hover:-translate-y-1'}`}>
               
               {project.status === 'deactivated' && (
                 <div className="absolute -top-3 -right-3 bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg flex items-center z-10">
@@ -107,10 +168,10 @@ const ProjectList = () => {
                   {canSaveFavorites && (
                     <button 
                       onClick={(e) => { e.preventDefault(); toggleFavorite(currentUser.id, project.id, 'project'); }}
-                      className="p-1.5 bg-white rounded-full border border-gray-100 hover:bg-red-50 text-gray-400 hover:text-red-500 shadow-sm transition-all hover:scale-110 z-10"
+                      className="animate-pop p-1.5 bg-white rounded-full border border-gray-100 hover:bg-red-50 text-gray-400 hover:text-red-500 shadow-sm transition-all z-20 relative"
                       title={isFav ? "Remove from favorites" : "Save to favorites"}
                     >
-                      <Heart className={`w-4 h-4 ${isFav ? 'fill-red-500 text-red-500' : ''}`} />
+                      <Heart className={`w-4 h-4 transition-colors ${isFav ? 'fill-red-500 text-red-500' : ''}`} />
                     </button>
                   )}
 
@@ -172,9 +233,16 @@ const ProjectList = () => {
           );
         })}
         
-        {displayedProjects.length === 0 && (
+        {sortedProjects.length === 0 && !showCreateForm && (
           <div className="col-span-full py-16 text-center text-gray-500 bg-surface rounded-3xl border border-dashed border-gray-300">
-            {activeTab === 'my_projects' ? "You don't have any projects yet." : "No public projects to explore."}
+            {searchQuery || courseFilter || visibilityFilter || startDateFilter || endDateFilter ? (
+              <>
+                <p className="font-bold text-gray-600">No projects match your current filters.</p>
+                <button onClick={() => { setSearchQuery(''); setCourseFilter(''); setVisibilityFilter(''); setStartDateFilter(''); setEndDateFilter(''); setSortOption('newest'); }} className="mt-3 text-sm text-blue-600 hover:underline font-bold">Clear all filters</button>
+              </>
+            ) : (
+              <p>You haven't created or joined any projects yet.</p>
+            )}
           </div>
         )}
       </div>
