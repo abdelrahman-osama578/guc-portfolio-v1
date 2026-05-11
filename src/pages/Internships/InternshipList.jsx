@@ -1,4 +1,5 @@
 // src/pages/Internships/InternshipList.jsx
+import { createPortal } from 'react-dom';
 import { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -133,7 +134,6 @@ const InternshipList = () => {
                 <Briefcase className="w-6 h-6" />
               </div>
               <div>
-                {/* FIXED: The Title is now the main clickable element that opens the modal */}
                 <button
                   onClick={() => setSelectedInternship(internship)}
                   className="text-lg font-bold text-primary hover:text-blue-600 transition-colors text-left"
@@ -173,9 +173,9 @@ const InternshipList = () => {
         )}
       </div>
 
-      {/* --- REQ 83: ENHANCED VIEW DETAILS MODAL --- */}
-      {selectedInternship && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+      {/* --- REQ 83: ENHANCED VIEW DETAILS MODAL (NOW PORTALED) --- */}
+      {selectedInternship && createPortal(
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-2xl animate-in fade-in zoom-in duration-200 max-h-[90vh] flex flex-col">
 
             {/* Modal Header */}
@@ -264,7 +264,8 @@ const InternshipList = () => {
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

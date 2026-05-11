@@ -41,7 +41,7 @@ const ProjectList = () => {
     return true;
   });
 
-  // 3. Apply Sorting (FIXED: Using exact timestamp for precision, fallback to date string)
+  // 3. Apply Sorting
   const sortedProjects = [...filteredProjects].sort((a, b) => {
     const timeA = a.timestamp || new Date(a.creationDate).getTime();
     const timeB = b.timestamp || new Date(b.creationDate).getTime();
@@ -96,7 +96,6 @@ const ProjectList = () => {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {/* Row 1 */}
           <div className="relative">
             <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" />
             <input type="text" placeholder="Search title or language..." className="w-full text-sm border border-gray-200 rounded-xl pl-10 pr-3 py-3 bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-primary transition-all" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
@@ -119,7 +118,6 @@ const ProjectList = () => {
             </select>
           </div>
 
-          {/* Row 2 */}
           <div className="relative">
             <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[10px] font-bold text-gray-400 uppercase tracking-wider pointer-events-none">From</span>
             <input type="date" className="w-full text-sm border border-gray-200 rounded-xl pl-14 pr-8 py-3 bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-primary text-gray-600 cursor-pointer" value={startDateFilter} onChange={(e) => setStartDateFilter(e.target.value)} />
@@ -153,18 +151,19 @@ const ProjectList = () => {
           return (
             <div key={project.id} className={`glass-card bg-surface p-6 rounded-2xl shadow-sm border transition-all flex flex-col h-full relative group ${project.status === 'deactivated' ? 'border-red-200 bg-red-50 hover:shadow-md' : 'border-gray-100 hover:shadow-md hover:-translate-y-1'}`}>
               
-              {project.status === 'deactivated' && (
-                <div className="absolute -top-3 -right-3 bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg flex items-center z-10">
-                  <AlertTriangle className="w-3 h-3 mr-1" /> Deactivated (Flagged)
-                </div>
-              )}
-
-              <div className="flex justify-between items-start mb-4">
+              <div className="flex justify-between items-start mb-4 relative z-10">
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isCreator ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'} ${project.status === 'deactivated' ? 'opacity-50' : ''}`}>
                   {isCreator ? <Folder className="w-6 h-6" /> : <Users className="w-6 h-6" />}
                 </div>
                 
                 <div className="flex items-center gap-2">
+                  {/* FIXED: Moved Deactivated badge securely inside the flex container */}
+                  {project.status === 'deactivated' && (
+                    <span className="flex items-center text-[10px] font-bold bg-red-600 text-white px-2.5 py-1.5 rounded-md uppercase tracking-wider shadow-sm">
+                      <AlertTriangle className="w-3 h-3 mr-1" /> Flagged
+                    </span>
+                  )}
+
                   {canSaveFavorites && (
                     <button 
                       onClick={(e) => { e.preventDefault(); toggleFavorite(currentUser.id, project.id, 'project'); }}

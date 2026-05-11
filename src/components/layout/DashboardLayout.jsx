@@ -9,13 +9,12 @@ const DashboardLayout = () => {
   const { toast, confirmDialog } = useData();
   const location = useLocation();
 
-  // FIXED: Back to the original professional gray tones, but as soft, breathing ambient light.
   const colors = ['bg-slate-200', 'bg-gray-200', 'bg-zinc-200'];
 
   return (
     <div className="min-h-screen flex bg-background relative overflow-hidden">
 
-      {/* --- DELIGHTER: Subtle Studio Lighting --- */}
+      {/* Background Blobs */}
       <div className="fixed inset-0 z-0 opacity-[0.15] pointer-events-none"
         style={{ backgroundImage: `radial-gradient(#000 1px, transparent 1px)`, backgroundSize: '32px 32px' }}>
       </div>
@@ -27,19 +26,21 @@ const DashboardLayout = () => {
 
       <Sidebar />
 
-      <div className="flex-1 flex flex-col relative z-10">
+      {/* FIXED: Removed 'z-10' from this wrapper to prevent the Stacking Context Trap! */}
+      <div className="flex-1 flex flex-col relative">
         <Topbar />
         <main className="flex-1 ml-64 p-8 overflow-y-auto overflow-x-hidden">
-          <div key={location.pathname} className="animate-page-enter w-full max-w-7xl mx-auto">
+          
+          {/* FIXED: Removed 'animate-page-enter'. CSS transform animations prevent modals from covering the screen. */}
+          <div key={location.pathname} className="w-full max-w-7xl mx-auto">
             <Outlet />
           </div>
         </main>
       </div>
 
       {toast && (
-        <div className={`fixed bottom-8 right-8 px-6 py-3 rounded-xl shadow-2xl border text-sm font-bold flex items-center gap-2 transform transition-all duration-300 translate-y-0 opacity-100 z-50 ${toast.type === 'error' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-gray-900 text-white border-gray-800'
+        <div className={`fixed bottom-8 right-8 px-6 py-3 rounded-xl shadow-2xl border text-sm font-bold flex items-center gap-2 transform transition-all duration-300 translate-y-0 opacity-100 z-[100] ${toast.type === 'error' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-gray-900 text-white border-gray-800'
           }`}>
-          {/* DELIGHTER: Success Sparkles */}
           {toast.type === 'success' && (
             <div className="absolute inset-0 pointer-events-none">
               <div className="confetti-particle" style={{ left: '10%', animationDelay: '0s' }}></div>
