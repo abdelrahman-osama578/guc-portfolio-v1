@@ -216,8 +216,8 @@ const DashboardHome = () => {
               <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex-1">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xl font-bold text-primary flex items-center"><Folder className="w-5 h-5 mr-2 text-blue-600" /> Recent Projects</h3>
-                  <Link to="/projects" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors flex items-center">View all <ArrowUpRight className="w-4 h-4 ml-1" /></Link>
-                </div>
+                  {/* This one is correct to stay as /projects because it is next to YOUR recent projects! */}
+                  <Link to="/projects" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors flex items-center">View all <ArrowUpRight className="w-4 h-4 ml-1" /></Link>                </div>
 
                 <div className="max-h-80 overflow-y-auto pr-2 space-y-3">
                   {userProjects.length > 0 ? (
@@ -284,16 +284,16 @@ const DashboardHome = () => {
                 </h3>
                 {isAdmin && (
                   <div className="flex gap-2">
-                     <span className="bg-orange-50 text-orange-700 text-[10px] font-bold px-3 py-1.5 rounded border border-orange-100 flex items-center uppercase tracking-wider">
-                        <Briefcase className="w-3 h-3 mr-1.5"/> {totalOffered} Offered
-                     </span>
-                     <span className="bg-green-50 text-green-700 text-[10px] font-bold px-3 py-1.5 rounded border border-green-100 flex items-center uppercase tracking-wider">
-                        <Award className="w-3 h-3 mr-1.5"/> {totalHiredStudents} Hired
-                     </span>
+                    <span className="bg-orange-50 text-orange-700 text-[10px] font-bold px-3 py-1.5 rounded border border-orange-100 flex items-center uppercase tracking-wider">
+                      <Briefcase className="w-3 h-3 mr-1.5" /> {totalOffered} Offered
+                    </span>
+                    <span className="bg-green-50 text-green-700 text-[10px] font-bold px-3 py-1.5 rounded border border-green-100 flex items-center uppercase tracking-wider">
+                      <Award className="w-3 h-3 mr-1.5" /> {totalHiredStudents} Hired
+                    </span>
                   </div>
                 )}
               </div>
-              
+
               <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6 h-48 flex items-end gap-2">
                 {chartLabels.length === 0 ? (
                   <p className="text-sm text-gray-500 w-full text-center pb-4 italic">No internship data available over time.</p>
@@ -342,8 +342,8 @@ const DashboardHome = () => {
             <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-primary flex items-center"><Star className="w-5 h-5 text-yellow-500 mr-2 fill-current" /> Recommended Projects</h3>
-                <Link to="/projects" state={{ activeTab: 'explore' }} className="text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors flex items-center">View all</Link>
-              </div>
+                {/* FIXED: Points to your new dedicated Explore page */}
+                <Link to="/explore" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors flex items-center">View all</Link>              </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {recommendedProjects.length > 0 ? recommendedProjects.map(proj => {
                   const creator = users.find(u => u.id === proj.creatorId);
