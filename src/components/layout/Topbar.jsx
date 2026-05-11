@@ -10,17 +10,22 @@ const Topbar = () => {
   const navigate = useNavigate(); 
 
   const unreadMessages = messages.filter(m => m.receiverId === currentUser?.id && !m.read).length;
-  
-  // REQ 91: Hide notification badge if muted
   const unreadNotifications = currentUser?.notificationsMuted ? 0 : invitations.filter(inv => inv.receiverId === currentUser?.id && !inv.read).length; 
 
   const handleSearch = (e) => {
-    if (e.key === 'Enter' && e.target.value) {
+    // FIXED: Now we capture the value and pass it through the router state!
+    if (e.key === 'Enter' && e.target.value.trim() !== '') {
+      const query = e.target.value.trim();
+      
       if (currentUser?.role === 'Employer') {
-        navigate('/manage-applicants');
+        // Employers search portfolios (Directory) by default
+        navigate('/portfolios', { state: { searchQuery: query } });
       } else {
-        navigate('/explore');
+        // Everyone else searches Explore Projects
+        navigate('/explore', { state: { searchQuery: query } });
       }
+      
+      e.target.value = ''; // Clear input after searching
     }
   };
 
@@ -54,7 +59,6 @@ const Topbar = () => {
 
         <div className="flex items-center space-x-3">
           <Link to="/notifications" className="p-2 bg-white rounded-full border border-gray-200 text-gray-500 hover:text-primary hover:shadow-sm transition-all relative">
-            {/* REQ 91: Change bell icon if muted */}
             {currentUser?.notificationsMuted ? <BellOff className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
             {unreadNotifications > 0 && (
               <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 border-2 border-white rounded-full"></span>

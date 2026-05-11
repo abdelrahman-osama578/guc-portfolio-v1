@@ -70,8 +70,16 @@ const AdminDashboard = () => {
   const handleCreateAdmin = (e) => {
     e.preventDefault();
     if(newAdminEmail && newAdminPassword) {
+      const formattedEmail = newAdminEmail.trim().toLowerCase();
+      
+      // --- FIXED: Check for duplicate email before creating ---
+      if (users.some(u => u.email.toLowerCase() === formattedEmail)) {
+        if (showToast) showToast("An account with this email already exists.", "error");
+        return;
+      }
+
       addUser({
-        firstName: "New", lastName: "Admin", email: newAdminEmail, password: newAdminPassword,
+        firstName: "New", lastName: "Admin", email: formattedEmail, password: newAdminPassword,
         role: "Administrator", status: "active", profilePic: "https://ui-avatars.com/api/?name=Admin"
       });
       setNewAdminEmail(''); setNewAdminPassword('');
@@ -194,7 +202,9 @@ const AdminDashboard = () => {
                   {roleUsers.map(user => {
                     const isRejected = user.status === 'rejected';
                     const isActive = user.status !== 'deactivated' && !isRejected;
-                    const isSuperAdmin = user.id === 3 || user.email === 'admin@guc.edu.eg';
+                    
+                    // --- FIXED: Only the original admin (ID 3) is invincible ---
+                    const isSuperAdmin = user.id === 3; 
                     const isSelf = user.id === currentUser?.id;
                     const canToggleStatus = !isSuperAdmin && !isSelf;
                     
@@ -229,7 +239,7 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* --- UPDATED: Project Management --- */}
+        {/* Project Management */}
         <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 row-span-2">
           <h3 className="text-lg font-bold text-primary mb-6 flex items-center">
             <Folder className="w-5 h-5 mr-2" /> Project Management
@@ -243,7 +253,6 @@ const AdminDashboard = () => {
                 return (
                   <div key={proj.id} className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-3 transition-colors ${isActive ? 'bg-white border-gray-200' : 'bg-red-50 border-red-200'}`}>
                     <div>
-                      {/* Clickable link without underline */}
                       <Link 
                         to={`/projects/${proj.id}`}
                         className={`font-bold text-sm hover:text-blue-600 transition-all flex items-center group w-fit ${isActive ? 'text-primary' : 'text-red-700'}`}
@@ -324,7 +333,7 @@ const AdminDashboard = () => {
            </form>
         </div>
 
-        {/* --- UPDATED: Flagged Projects & Appeals --- */}
+        {/* Flagged Projects & Appeals */}
         <div className="bg-surface p-6 rounded-2xl shadow-sm border border-red-100 lg:col-span-2">
           <h3 className="text-lg font-bold text-red-600 mb-4 flex items-center">
             <AlertTriangle className="w-5 h-5 mr-2" /> Moderation Queue (Flagged Projects)
@@ -335,7 +344,6 @@ const AdminDashboard = () => {
                 <div key={proj.id} className="p-5 border border-red-200 bg-red-50 rounded-xl">
                   <div className="flex flex-col">
                     
-                    {/* Clickable title without underline */}
                     <div className="flex items-center gap-2">
                       <Link 
                         to={`/projects/${proj.id}`} 

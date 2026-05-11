@@ -13,7 +13,6 @@ const Login = () => {
   const { users, resetPassword, toast, showToast } = useData(); 
   const navigate = useNavigate();
 
-  // Forgot Password Modal State
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [forgotStep, setForgotStep] = useState(1); 
   const [resetEmail, setResetEmail] = useState('');
@@ -23,9 +22,14 @@ const Login = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
-    const success = login(email, password);
-    if (success) navigate('/');
-    else setError('Invalid email or password. Please try again.');
+    
+    // --- FIXED: Handle new detailed login response ---
+    const result = login(email, password);
+    if (result.success) {
+      navigate('/');
+    } else {
+      setError(result.error);
+    }
   };
 
   const handleForgotSubmit = (e) => {
@@ -48,17 +52,15 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8 relative">
       <div className="max-w-md w-full bg-surface p-8 rounded-2xl shadow-sm space-y-8">
         
-        {/* --- FIXED: Using Actual Image Logo --- */}
         <div>
           <div className="flex justify-center">
-            {/* IMPORTANT: Update this src to point exactly to your logo file! */}
             <img src="/German_University_in_Cairo_logo.png" alt="GUC Logo" className="h-12 object-contain" />
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-primary">Sign in to your account</h2>
         </div>
         
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && <div className="bg-red-50 text-red-500 p-3 rounded-lg text-sm text-center">{error}</div>}
+          {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center font-medium border border-red-100">{error}</div>}
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email address</label>
@@ -73,10 +75,7 @@ const Login = () => {
           <div className="flex items-center justify-between text-sm">
             <button 
               type="button" 
-              onClick={() => {
-                setResetEmail(email);
-                setShowForgotModal(true);
-              }} 
+              onClick={() => { setResetEmail(email); setShowForgotModal(true); }} 
               className="font-medium text-primary hover:underline"
             >
               Forgot your password?
@@ -93,7 +92,6 @@ const Login = () => {
         </div>
       </div>
 
-      {/* Interactive Forgot Password Modal */}
       {showForgotModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-lg">
@@ -135,7 +133,6 @@ const Login = () => {
         </div>
       )}
 
-      {/* Toast UI for Login Page */}
       {toast && (
         <div className={`fixed bottom-8 right-8 px-6 py-3 rounded-xl shadow-lg border text-sm font-bold flex items-center gap-2 transform transition-all duration-300 translate-y-0 opacity-100 z-[100] ${
           toast.type === 'error' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-gray-900 text-white border-gray-800'

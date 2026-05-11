@@ -10,8 +10,7 @@ export const AuthProvider = ({ children }) => {
   const { users } = useData();
   const [currentUser, setCurrentUser] = useState(null);
 
-  // --- THE FIX: Auto-sync currentUser with the main database ---
-  // If anything about this user changes in DataContext, instantly update their active session!
+  // Auto-sync currentUser with the main database
   useEffect(() => {
     if (currentUser) {
       const freshUserData = users.find(u => u.id === currentUser.id);
@@ -21,17 +20,27 @@ export const AuthProvider = ({ children }) => {
     }
   }, [users]);
 
-  // Requirement 1: Login using email and password
+  // --- FIXED: Check User Status during Login ---
   const login = (email, password) => {
-    const user = users.find(u => u.email === email && u.password === password);
+    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
+    
     if (user) {
+      if (user.status === 'deactivated') {
+        return { success: false, error: "Your account has been deactivated by an administrator." };
+      }
+      if (user.status === 'pending_admin_approval') {
+        return { success: false, error: "Your account is still pending administrator approval." };
+      }
+      if (user.status === 'rejected') {
+        return { success: false, error: "Your registration request was rejected by an administrator." };
+      }
+      
       setCurrentUser(user);
-      return true;
+      return { success: true };
     }
-    return false;
+    return { success: false, error: "Invalid email or password. Please try again." };
   };
 
-  // Requirement 1: Logout
   const logout = () => {
     setCurrentUser(null);
   };
