@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Plus, Archive, CheckCircle2, AlertCircle, Edit, Trash2, Star, Briefcase, Eye, X, Building2, Clock, Calendar, FileText, Code } from 'lucide-react'; 
 import CustomStatusDropdown from '../../components/portfolio/CustomStatusDropdown';
 import CustomSelect from '../../components/common/CustomSelect';
+import TiltCard from '../../components/common/TiltCard'; // <-- IMPORTED TILTCARD
 
 const applicantStatusOptions = [
   { value: 'pending', label: 'Pending' },
@@ -59,7 +60,6 @@ const ManageApplicants = () => {
   const getStudent = (studentId) => users.find(u => u.id === studentId);
   const getStudentProjectCount = (studentId) => projects.filter(p => p.creatorId === studentId && p.visibility === 'public').length;
 
-  // Prevent time travel: Get today's date formatted as YYYY-MM-DD
   const todayDateStr = new Date().toISOString().split('T')[0];
 
   const handleSubmit = (e) => {
@@ -123,24 +123,23 @@ const ManageApplicants = () => {
 
       {showPostForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold mb-4">{editingId ? 'Edit Internship' : 'Post New Internship'}</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div><label className="block text-sm font-medium mb-1">Job Title</label><input required type="text" className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} /></div>
-              <div><label className="block text-sm font-medium mb-1">Details / Responsibilities</label><textarea required rows="3" className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none" value={formData.details} onChange={e => setFormData({...formData, details: e.target.value})} /></div>
+              <div><label className="block text-sm font-medium mb-1">Details / Responsibilities</label><textarea required rows="3" className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none shadow-inner resize-none" value={formData.details} onChange={e => setFormData({...formData, details: e.target.value})} /></div>
               <div className="grid grid-cols-2 gap-4">
                 <div><label className="block text-sm font-medium mb-1">Duration</label><input required type="text" className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none" value={formData.duration} onChange={e => setFormData({...formData, duration: e.target.value})} /></div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Deadline</label>
-                  {/* DESIGN FOR ERRORS: Added min property here to prevent past dates */}
                   <input required type="date" min={todayDateStr} className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none text-gray-600" value={formData.deadline} onChange={e => setFormData({...formData, deadline: e.target.value})} />
                 </div>
               </div>
               <div><label className="block text-sm font-medium mb-1">Required Skills (comma separated)</label><input required type="text" placeholder="React, Node, etc." className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none" value={formData.skills} onChange={e => setFormData({...formData, skills: e.target.value})} /></div>
               <div><label className="block text-sm font-medium mb-1">Programming Languages (comma separated)</label><input required type="text" placeholder="JavaScript, Python, etc." className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none" value={formData.languages} onChange={e => setFormData({...formData, languages: e.target.value})} /></div>
               <div className="flex justify-end gap-2 pt-4">
-                <button type="button" onClick={() => setShowPostForm(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg font-bold">Cancel</button>
-                <button type="submit" className="px-4 py-2 text-sm text-white bg-primary rounded-lg hover:bg-gray-800 font-bold">{editingId ? 'Save Changes' : 'Post Internship'}</button>
+                <button type="button" onClick={() => setShowPostForm(false)} className="px-4 py-2 text-sm text-gray-600 border border-gray-200 hover:bg-gray-100 rounded-lg font-bold">Cancel</button>
+                <button type="submit" className="px-4 py-2 text-sm text-white bg-primary rounded-lg hover:bg-gray-800 font-bold shadow-sm">{editingId ? 'Save Changes' : 'Post Internship'}</button>
               </div>
             </form>
           </div>
@@ -153,7 +152,8 @@ const ManageApplicants = () => {
         </div>
       )}
 
-      {displayedInternships.map(internship => {
+      {/* FIXED: Added 'index' to the map function */}
+      {displayedInternships.map((internship, index) => {
         const currentFilter = filterStatus[internship.id] || 'all';
         const currentSort = sortApplicants[internship.id] || 'default';
 
@@ -170,19 +170,27 @@ const ManageApplicants = () => {
         }
 
         return (
-          <div key={internship.id} className="bg-surface p-6 rounded-3xl shadow-sm border border-gray-100 mb-6 relative hover:shadow-md transition-shadow">
-            {viewArchived && <div className="absolute top-0 left-0 w-full h-1 bg-purple-500 rounded-t-3xl"></div>}
+          <TiltCard 
+            key={internship.id} 
+            delay={index * 100}
+            className="glass-card bg-surface p-6 rounded-3xl shadow-sm border border-gray-100 mb-6 relative hover:shadow-md transition-all"
+          >
+            {viewArchived && <div className="absolute top-0 left-0 w-full h-1 bg-purple-500 rounded-t-3xl z-20"></div>}
             
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-gray-100 pb-4 mb-4 gap-4">
+            <span className="absolute right-4 -top-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">
+              {internship.title.substring(0, 2).toUpperCase()}
+            </span>
+
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-gray-100 pb-4 mb-4 gap-4 relative z-10">
               <div>
                 <div className="flex items-center gap-3">
                   <button 
                     onClick={() => setSelectedInternship(internship)}
-                    className="text-xl font-bold text-primary hover:text-blue-600 transition-colors text-left"
+                    className="text-xl font-bold text-primary hover:text-blue-600 transition-colors text-left focus:outline-none"
                   >
                     {internship.title}
                   </button>
-                  <span className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wider ${internship.status === 'hiring' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}>
+                  <span className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wider shadow-sm border ${internship.status === 'hiring' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
                     {internship.status}
                   </span>
                 </div>
@@ -192,32 +200,31 @@ const ManageApplicants = () => {
               <div className="flex flex-wrap items-center gap-1">
                 {!viewArchived && (
                   <>
-                    <button onClick={() => setSelectedInternship(internship)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="View Details"><Eye className="w-5 h-5" /></button>
-                    <button onClick={() => handleEditClick(internship)} className="p-2 text-gray-400 hover:text-primary hover:bg-gray-50 rounded-lg transition-all" title="Edit"><Edit className="w-5 h-5" /></button>
-                    <button onClick={() => deleteInternship(internship.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Delete"><Trash2 className="w-5 h-5" /></button>
+                    <button onClick={() => setSelectedInternship(internship)} className="animate-pop p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="View Details"><Eye className="w-5 h-5" /></button>
+                    <button onClick={() => handleEditClick(internship)} className="animate-pop p-2 text-gray-400 hover:text-primary hover:bg-gray-50 rounded-lg transition-all" title="Edit"><Edit className="w-5 h-5" /></button>
+                    <button onClick={() => confirmAction("Delete this internship?", "Delete", () => deleteInternship(internship.id))} className="animate-pop p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Delete"><Trash2 className="w-5 h-5" /></button>
                     
-                    <button onClick={() => toggleInternshipStatus(internship.id)} className="flex items-center text-xs font-bold bg-gray-100 text-gray-700 px-3 py-2 ml-2 rounded-lg hover:bg-gray-200 transition-colors">
+                    <button onClick={() => toggleInternshipStatus(internship.id)} className="animate-pop flex items-center text-xs font-bold bg-gray-100 text-gray-700 px-3 py-2 ml-2 rounded-lg hover:bg-gray-200 transition-colors shadow-sm">
                       {internship.status === 'hiring' ? <><CheckCircle2 className="w-4 h-4 mr-1"/> Mark Filled</> : <><AlertCircle className="w-4 h-4 mr-1"/> Reopen</>}
                     </button>
                   </>
                 )}
                 
                 {viewArchived ? (
-                  <button onClick={() => toggleArchiveInternship(internship.id)} className="flex items-center text-xs font-bold bg-green-50 text-green-700 px-3 py-2 rounded-lg hover:bg-green-100 transition-colors">
+                  <button onClick={() => toggleArchiveInternship(internship.id)} className="animate-pop flex items-center text-xs font-bold bg-green-50 text-green-700 px-3 py-2 rounded-lg hover:bg-green-100 transition-colors shadow-sm">
                     <Archive className="w-4 h-4 mr-1" /> Unarchive
                   </button>
                 ) : (
-                  <button onClick={() => handleArchiveClick(internship)} className="flex items-center text-xs font-bold bg-purple-50 text-purple-700 px-3 py-2 rounded-lg hover:bg-purple-100 transition-colors" title="Deadline must pass to archive">
+                  <button onClick={() => handleArchiveClick(internship)} className="animate-pop flex items-center text-xs font-bold bg-purple-50 text-purple-700 px-3 py-2 rounded-lg hover:bg-purple-100 transition-colors shadow-sm" title="Deadline must pass to archive">
                     <Archive className="w-4 h-4 mr-1" /> Archive
                   </button>
                 )}
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row justify-between items-center mb-4 bg-gray-50 p-3 rounded-xl border border-gray-100 gap-3">
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-4 bg-gray-50 p-3 rounded-xl border border-gray-100 gap-3 relative z-10">
               <span className="text-sm font-bold text-gray-700">Applicants ({internshipApps.length})</span>
               <div className="flex flex-wrap gap-2">
-                {/* SYMMETRY FIX: Replaced native selects with CustomSelect */}
                 <CustomSelect 
                   value={currentFilter} 
                   onChange={(val) => setFilterStatus(prev => ({ ...prev, [internship.id]: val }))}
@@ -233,17 +240,17 @@ const ManageApplicants = () => {
             </div>
 
             {internshipApps.length === 0 ? (
-              <p className="text-sm text-gray-500 italic px-2">No applicants match this view.</p>
+              <p className="text-sm text-gray-500 italic px-2 relative z-10">No applicants match this view.</p>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-4 relative z-10">
                 {internshipApps.map(app => {
                   const student = getStudent(app.studentId);
                   const isFav = favorites.some(f => f.userId === currentUser.id && f.itemId === student?.id && f.type === 'portfolio');
                   const projectCount = getStudentProjectCount(app.studentId);
 
                   return (
-                    <div key={app.id} className={`p-4 border rounded-xl transition-all ${isFav ? 'bg-yellow-50 border-yellow-200 shadow-sm' : 'bg-white border-gray-200'}`}>
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-3">
+                    <div key={app.id} className={`p-4 border rounded-xl transition-all hover:shadow-md hover:-translate-y-0.5 ${isFav ? 'bg-yellow-50 border-yellow-200 shadow-sm' : 'bg-white border-gray-200'}`}>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-3 relative z-10">
                         <div className="flex items-center gap-3">
                           <img src={student?.profilePic} alt="" className="w-10 h-10 rounded-full border border-gray-200 object-cover" />
                           <div>
@@ -254,7 +261,6 @@ const ManageApplicants = () => {
                             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-0.5">Public Projects: {projectCount}</p>
                           </div>
                         </div>
-                        
                         <CustomStatusDropdown 
                           status={app.status}
                           options={applicantStatusOptions}
@@ -272,7 +278,7 @@ const ManageApplicants = () => {
                           }}
                         />
                       </div>
-                      <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-100 leading-relaxed">
+                      <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-100 leading-relaxed shadow-inner relative z-10">
                         <span className="font-bold text-[10px] uppercase tracking-wider text-gray-400 block mb-1">Cover Letter:</span>
                         {app.coverLetter}
                       </div>
@@ -281,13 +287,13 @@ const ManageApplicants = () => {
                 })}
               </div>
             )}
-          </div>
+          </TiltCard>
         );
       })}
 
       {selectedInternship && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-2xl animate-in fade-in zoom-in duration-200 max-h-[90vh] flex flex-col">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-2xl shadow-2xl animate-in fade-in zoom-in duration-200 max-h-[90vh] flex flex-col">
             <div className="flex justify-between items-start mb-4 shrink-0 border-b border-gray-100 pb-4">
               <div>
                 <h3 className="text-2xl font-bold text-primary mb-1">{selectedInternship.title}</h3>
@@ -295,7 +301,7 @@ const ManageApplicants = () => {
                   <p className="text-sm font-bold text-blue-600 flex items-center">
                     <Building2 className="w-4 h-4 mr-1" /> {selectedInternship.companyName}
                   </p>
-                  <span className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wider ${selectedInternship.status === 'hiring' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}>
+                  <span className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wider shadow-sm border ${selectedInternship.status === 'hiring' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
                     {selectedInternship.status}
                   </span>
                 </div>
@@ -314,7 +320,7 @@ const ManageApplicants = () => {
 
               <div>
                 <h4 className="text-sm font-bold text-gray-800 mb-2 flex items-center uppercase tracking-wider"><FileText className="w-4 h-4 mr-2 text-blue-500"/> Role Description</h4>
-                <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line bg-white border border-gray-100 p-4 rounded-xl">
+                <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line bg-white border border-gray-100 p-4 rounded-xl shadow-sm">
                   {selectedInternship.details || "No detailed description provided by the employer."}
                 </p>
               </div>
@@ -342,13 +348,13 @@ const ManageApplicants = () => {
             </div>
 
             <div className="mt-4 pt-4 border-t border-gray-100 shrink-0 flex justify-end gap-2">
-               <button onClick={() => setSelectedInternship(null)} className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">
+               <button onClick={() => setSelectedInternship(null)} className="px-5 py-2.5 text-sm font-bold text-gray-600 bg-gray-50 border border-gray-200 hover:bg-gray-100 rounded-xl transition-colors">
                  Close
                </button>
                {!selectedInternship.isArchived && (
                  <button 
                    onClick={() => handleEditClick(selectedInternship)} 
-                   className="px-5 py-2.5 text-sm font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors shadow-sm flex items-center"
+                   className="animate-pop px-5 py-2.5 text-sm font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors shadow-sm flex items-center"
                  >
                    <Edit className="w-4 h-4 mr-2" /> Edit Internship
                  </button>
