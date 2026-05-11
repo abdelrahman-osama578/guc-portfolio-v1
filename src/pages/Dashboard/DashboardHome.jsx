@@ -49,6 +49,7 @@ const DashboardHome = () => {
   const isEmployer = currentUser?.role === 'Employer';
   const isAdmin = currentUser?.role === 'Administrator';
 
+  // targetInternships pulls Company specific for Employer, and ALL for Admin
   const targetInternships = isEmployer ? internships.filter(i => i.companyName === currentUser?.companyName) : internships;
   const totalOffered = targetInternships.length;
   const totalHiredStudents = applications.filter(app => app.status === 'accepted' && targetInternships.some(i => i.id === app.internshipId)).length;
@@ -205,8 +206,8 @@ const DashboardHome = () => {
               <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex-1">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xl font-bold text-primary flex items-center"><Folder className="w-5 h-5 mr-2 text-blue-600" /> Recent Projects</h3>
-                  <Link to="/projects" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors flex items-center">View all <ArrowUpRight className="w-4 h-4 ml-1" /></Link>
-                </div>
+                  {/* This one is correct to stay as /projects because it is next to YOUR recent projects! */}
+                  <Link to="/projects" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors flex items-center">View all <ArrowUpRight className="w-4 h-4 ml-1" /></Link>                </div>
 
                 <div className="max-h-80 overflow-y-auto pr-2 space-y-3">
                   {userProjects.length > 0 ? (

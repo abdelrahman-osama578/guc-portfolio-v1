@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { ArrowLeft, Star, Folder, PlaySquare, Code, Edit, Trash2, Eye, FileText, X, AlertTriangle, Flag, CheckCircle2, Globe, Mail, MapPin, Briefcase, Edit3 } from 'lucide-react';
+// FIXED: Added Calendar to the import list below!
+import { ArrowLeft, Star, Folder, PlaySquare, Code, Edit, Trash2, Eye, FileText, X, AlertTriangle, Flag, CheckCircle2, Globe, Mail, MapPin, Briefcase, Edit3, Calendar } from 'lucide-react';
 import SkillSphere from '../../components/portfolio/SkillSphere'; 
 import CustomSelect from '../../components/common/CustomSelect';
 
@@ -44,10 +45,16 @@ const PortfolioDetail = () => {
     return isOwnProfile || p.visibility === 'public';
   });
 
+  // --- FIXED: Restored the automatic temporal logic for Req 90 ---
+  const today = new Date();
   const completedInternships = applications
     .filter(app => app.studentId === profileUser.id && app.status === 'accepted')
     .map(app => internships.find(i => i.id === app.internshipId))
-    .filter(Boolean);
+    .filter(intern => {
+      // Only show it if it exists AND the end date is in the past
+      if (!intern || !intern.endDate) return false;
+      return today > new Date(intern.endDate);
+    });
 
   const handleSaveProfile = (e) => {
     e.preventDefault();
@@ -65,7 +72,6 @@ const PortfolioDetail = () => {
     }
   };
 
-  // --- NEW: Dynamic Request Tracking ---
   // Find all courses that this user has requested to link but are still pending
   const pendingLinkedCourses = invitations
     .filter(inv => inv.type === 'course_request' && inv.actionType === 'link' && inv.senderId === profileUser.id && inv.status === 'pending')

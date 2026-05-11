@@ -1,5 +1,6 @@
 // src/pages/Projects/ProjectDetail.jsx
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom'; // <-- THE MAGIC FIX: Teleports modals out of the trap!
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -41,7 +42,6 @@ const ProjectDetail = () => {
   const [editingProjCommentId, setEditingProjCommentId] = useState(null);
   const [editProjCommentText, setEditProjCommentText] = useState('');
   
-  // --- FIX: Task Comment Edit States ---
   const [editingTaskCommentId, setEditingTaskCommentId] = useState(null);
   const [editTaskCommentText, setEditTaskCommentText] = useState('');
 
@@ -50,7 +50,6 @@ const ProjectDetail = () => {
   const [viewingPdf, setViewingPdf] = useState(null);
   const [inviteSearchQuery, setInviteSearchQuery] = useState('');
   
-  // Task States
   const todayDateStr = new Date().toISOString().split('T')[0]; 
   const [newTaskDesc, setNewTaskDesc] = useState('');
   const [newTaskDeadline, setNewTaskDeadline] = useState(todayDateStr);
@@ -58,7 +57,6 @@ const ProjectDetail = () => {
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [editTaskData, setEditTaskData] = useState({});
   
-  // Project Edit States
   const [isEditingProj, setIsEditingProj] = useState(false);
   const [projFormData, setProjFormData] = useState({
     title: project?.title || '', courseId: project?.courseId || '',
@@ -66,12 +64,10 @@ const ProjectDetail = () => {
     demoVideo: project?.demoVideo || '', visibility: project?.visibility || 'private'
   });
 
-  // Flag & Appeal States
   const [showFlagModal, setShowFlagModal] = useState(false);
   const [flagReasonText, setFlagReasonText] = useState('');
   const [appealText, setAppealText] = useState('');
 
-  // Derived Data
   const ratings = project?.ratings || [];
   const totalRatings = ratings.length;
   const averageScore = totalRatings > 0 ? (ratings.reduce((sum, r) => sum + r.score, 0) / totalRatings).toFixed(1) : 0;
@@ -288,8 +284,9 @@ const ProjectDetail = () => {
         </div>
       </div>
 
-      {showFlagModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      {/* --- TELEPORTED MODALS USING createPortal --- */}
+      {showFlagModal && createPortal(
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-lg">
             <h3 className="text-xl font-bold mb-2 flex items-center text-red-600"><Flag className="w-5 h-5 mr-2"/> Flag Project</h3>
             <p className="text-sm text-gray-500 mb-4">Flagging this project will automatically deactivate it. Please provide a reason (e.g., plagiarism).</p>
@@ -301,11 +298,12 @@ const ProjectDetail = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {isEditingProj && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      {isEditingProj && createPortal(
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-lg">
             <h3 className="text-xl font-bold mb-4">Edit Project</h3>
             <form onSubmit={handleUpdateProject} className="space-y-4">
@@ -324,8 +322,30 @@ const ProjectDetail = () => {
               <div className="flex justify-end gap-2 pt-4"><button type="button" onClick={() => setIsEditingProj(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button><button type="submit" className="px-4 py-2 text-sm text-white bg-primary rounded-lg hover:bg-gray-800">Save</button></div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
+
+      {viewingPdf && createPortal(
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[9999] p-4 backdrop-blur-sm transition-opacity">
+          <div className="bg-white rounded-2xl p-4 w-full max-w-4xl h-[90vh] flex flex-col shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold flex items-center"><FileText className="w-5 h-5 mr-2 text-blue-600"/> Document Viewer</h3>
+              <button onClick={() => setViewingPdf(null)} className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full transition-colors"><X className="w-5 h-5"/></button>
+            </div>
+            <object data={viewingPdf} type="application/pdf" className="w-full flex-1 border border-gray-200 rounded-lg bg-gray-50">
+              <div className="flex items-center justify-center h-full text-gray-500 flex-col">
+                <AlertTriangle className="w-8 h-8 mb-2" />
+                <p>Your browser does not support viewing PDFs directly.</p>
+                <a href={viewingPdf} download className="text-blue-500 hover:underline mt-2">Click here to download it instead.</a>
+              </div>
+            </object>
+          </div>
+        </div>,
+        document.body
+      )}
+      {/* --- END TELEPORTED MODALS --- */}
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">

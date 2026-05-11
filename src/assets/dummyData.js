@@ -56,6 +56,7 @@ export const initialUsers = [
 
 ];
 
+
 export const initialCourses = [
   { id: "c1", code: "CSEN701", name: "Software Engineering" },
   { id: "c2", code: "CSEN702", name: "Advanced Computer Networks" },
@@ -88,6 +89,20 @@ export const initialInternships = [
     deadline: "2026-06-01",
     postedDate: "2026-05-01",
     status: "hiring"
+  },
+  {
+    id: 999, 
+    title: "Legacy React Developer",
+    companyName: "TechCorp", 
+    postedDate: "2026-03-01",
+    deadline: "2026-04-15", 
+    startDate: "2026-04-20",
+    endDate: "2026-05-05",  // THIS PAST DATE TRIGGERS THE AUTOMATIC COMPLETION
+    location: "Cairo, Egypt",
+    type: "Part-time",
+    description: "This is a test internship.",
+    requirements: ["React", "JavaScript"],
+    status: "active" 
   }
 ];
 
@@ -97,7 +112,8 @@ export const initialTasks = [
 ];
 
 export const initialApplications = [
-  { id: "app1", internshipId: "i1", studentId: 1, coverLetter: "I love React!", status: "pending" }
+  { id: "app1", internshipId: "i1", studentId: 1, coverLetter: "I love React!", status: "pending" },{ id: "app2", internshipId: 999, studentId: 1, coverLetter: "I have the required experience.", status: "accepted" }
+
 ];
 
 export const initialProjectComments = [
