@@ -36,15 +36,18 @@ const Register = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    const targetEmail = role === 'Employer' ? formData.companyEmail : formData.email;
+    // --- FIXED: Extract, trim, and convert to lowercase for a bulletproof security check ---
+    const rawEmail = role === 'Employer' ? formData.companyEmail : formData.email;
+    const targetEmail = rawEmail.trim().toLowerCase();
 
-    if (users.some(u => u.email === targetEmail)) {
+    // Check if the lowercase version of the input matches any lowercase email in the database
+    if (users.some(u => u.email && u.email.toLowerCase() === targetEmail)) {
       showToast("This email is already registered. Please log in or use a different email.", "error");
       return; 
     }
 
     if (role !== 'Employer') {
-      if (!formData.email.endsWith('guc.edu.eg')) {
+      if (!targetEmail.endsWith('guc.edu.eg')) {
         showToast("Students and Instructors must use a valid GUC email ending in 'guc.edu.eg'.", "error");
         return; 
       }
@@ -58,14 +61,16 @@ const Register = () => {
 
     if (role === 'Employer') {
       newUser.companyName = formData.companyName;
-      newUser.email = formData.companyEmail;
+      // Save the sanitized lowercase email to the database
+      newUser.email = targetEmail; 
       newUser.status = 'pending_admin_approval'; 
       newUser.taxDocument = formData.taxDocument;
       newUser.taxDocumentName = formData.taxDocumentName || 'Tax_Document.pdf';
     } else {
       newUser.firstName = formData.firstName;
       newUser.lastName = formData.lastName;
-      newUser.email = formData.email;
+      // Save the sanitized lowercase email to the database
+      newUser.email = targetEmail;
       if (role === 'Course Instructor') {
         newUser.linkedCourses = ['BP'];
       }
@@ -80,7 +85,6 @@ const Register = () => {
     <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8 relative">
       <div className="max-w-md w-full bg-surface p-8 rounded-2xl shadow-sm space-y-6">
         
-        {/* --- FIXED: Added Image Logo and adjusted title --- */}
         <div className="flex flex-col items-center mb-4">
           {/* IMPORTANT: Update this src to point exactly to your logo file! */}
           <img src="/German_University_in_Cairo_logo.png" alt="GUC Logo" className="h-12 object-contain mb-6" />

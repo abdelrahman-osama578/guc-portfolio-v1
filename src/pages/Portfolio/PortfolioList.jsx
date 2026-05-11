@@ -63,13 +63,15 @@ const PortfolioList = () => {
       if (user.role !== roleFilter) return false;
     }
 
+    // --- FIXED: Upgraded Search Engine to include Course Codes! ---
     if (searchTerm) {
       const query = searchTerm.toLowerCase();
       const fullName = `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase();
       const companyName = (user.companyName || '').toLowerCase();
       const email = (user.email || '').toLowerCase();
+      const linkedCoursesStr = (user.linkedCourses || []).join(' ').toLowerCase();
 
-      if (!fullName.includes(query) && !companyName.includes(query) && !email.includes(query)) {
+      if (!fullName.includes(query) && !companyName.includes(query) && !email.includes(query) && !linkedCoursesStr.includes(query)) {
         return false;
       }
     }
@@ -123,7 +125,8 @@ const PortfolioList = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           <div className="relative">
             <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" />
-            <input type="text" placeholder="Search name or email..." className="w-full text-sm border border-gray-200 rounded-xl pl-10 pr-3 py-3 bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-primary transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            {/* FIXED: Updated placeholder text to indicate course search is possible */}
+            <input type="text" placeholder="Search name, email, or course..." className="w-full text-sm border border-gray-200 rounded-xl pl-10 pr-3 py-3 bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-primary transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
 
           <div className="relative">
