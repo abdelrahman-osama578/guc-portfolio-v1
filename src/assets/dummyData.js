@@ -15,13 +15,13 @@ export const initialUsers = [
   },
   {
     id: 2,
-    firstName: "Mervat",
+    firstName: "Kareem",
     lastName: "Instructor",
-    email: "mervat@guc.edu.eg",
+    email: "kareem@guc.edu.eg",
     password: "password123",
     role: "Course Instructor",
     linkedCourses: ["CSEN701", "BP"],
-    profilePic: "https://i.pravatar.cc/150?img=5"
+    profilePic: "https://i.pravatar.cc/150?img=13"
   },
   {
     id: 3,

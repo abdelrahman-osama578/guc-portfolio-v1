@@ -1,6 +1,6 @@
 // src/pages/Internships/InternshipList.jsx
 import { createPortal } from 'react-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { Search, Calendar, Briefcase, CheckCircle2, Filter, Building2, Clock, ArrowUpDown, FileText, Code, X, ArrowRight } from 'lucide-react';
@@ -11,25 +11,18 @@ const InternshipList = () => {
   const { internships, applications, addApplication } = useData();
   const { currentUser } = useAuth();
 
-  const [isLoading, setIsLoading] = useState(true);
-
   const [searchQuery, setSearchQuery] = useState('');
   const [companyFilter, setCompanyFilter] = useState('');
   const [durationFilter, setDurationFilter] = useState('');
-  const [sortOption, setSortOption] = useState('newest');
+  const [sortOption, setSortOption] = useState('newest'); 
 
   const [selectedInternship, setSelectedInternship] = useState(null);
   const [coverLetter, setCoverLetter] = useState('');
 
   const activeInternships = internships.filter(i => !i.isArchived && i.status === 'hiring');
+
   const uniqueCompanies = [...new Set(activeInternships.map(i => i.companyName))].sort();
   const uniqueDurations = [...new Set(activeInternships.map(i => i.duration))].sort();
-
-  useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => { setIsLoading(false); }, 800);
-    return () => clearTimeout(timer);
-  }, []);
 
   const filteredInternships = activeInternships.filter(internship => {
     if (searchQuery && !internship.title.toLowerCase().includes(searchQuery.toLowerCase()) && !internship.companyName.toLowerCase().includes(searchQuery.toLowerCase())) {
@@ -103,31 +96,23 @@ const InternshipList = () => {
       </div>
 
       <div className="space-y-4">
-        {isLoading ? (
-          <>
-            {[1, 2, 3, 4].map(num => (
-              <div key={num} className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4 animate-pulse h-[140px]">
-                 <div className="w-12 h-12 bg-gray-200 rounded-xl shrink-0"></div>
-                 <div className="flex-1 space-y-3">
-                   <div className="h-6 bg-gray-200 rounded-md w-1/3"></div>
-                   <div className="h-4 bg-gray-200 rounded-md w-1/4"></div>
-                   <div className="h-3 bg-gray-200 rounded-md w-1/2 mt-4"></div>
-                 </div>
-                 <div className="flex flex-col items-end justify-between min-w-[120px]">
-                   <div className="h-4 bg-gray-200 rounded w-20"></div>
-                   <div className="h-10 bg-gray-200 rounded-lg w-full mt-4"></div>
-                 </div>
-              </div>
-            ))}
-          </>
+        {sortedInternships.length === 0 ? (
+          <div className="py-12 text-center bg-surface rounded-2xl border border-dashed border-gray-300">
+            <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 font-medium">No internships match your current filters.</p>
+            <button onClick={() => { setSearchQuery(''); setCompanyFilter(''); setDurationFilter(''); setSortOption('newest'); }} className="mt-3 text-sm text-blue-600 hover:underline font-bold">
+              Clear all filters
+            </button>
+          </div>
         ) : (
-          <>
-            {sortedInternships.map((internship, index) => (
-              <TiltCard 
-                key={internship.id} 
-                delay={index * 100}
-                className="glass-card bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:shadow-md hover:border-blue-200 transition-all hover:-translate-y-1 relative group overflow-hidden"
-              >
+          sortedInternships.map((internship, index) => (
+            <TiltCard 
+              key={internship.id} 
+              delay={index * 100}
+              className="glass-card bg-surface rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-200 transition-all hover:-translate-y-1 group overflow-hidden"
+            >
+              {/* FIXED: The flex layout is now safely INSIDE the TiltCard children so the card doesn't compress! */}
+              <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 h-full relative z-10">
                 <span className="absolute right-10 -bottom-4 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">
                   {internship.companyName.substring(0, 2).toUpperCase()}
                 </span>
@@ -154,23 +139,12 @@ const InternshipList = () => {
                     View Details <ArrowRight className="w-4 h-4 ml-1" />
                   </button>
                 </div>
-              </TiltCard>
-            ))}
-
-            {sortedInternships.length === 0 && (
-              <div className="py-12 text-center bg-surface rounded-2xl border border-dashed border-gray-300">
-                <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 font-medium">No internships match your current filters.</p>
-                <button onClick={() => { setSearchQuery(''); setCompanyFilter(''); setDurationFilter(''); setSortOption('newest'); }} className="mt-3 text-sm text-blue-600 hover:underline font-bold">
-                  Clear all filters
-                </button>
               </div>
-            )}
-          </>
+            </TiltCard>
+          ))
         )}
       </div>
 
-      {/* --- TELEPORTED MODAL --- */}
       {selectedInternship && createPortal(
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4 backdrop-blur-sm">
           <div className="bg-white rounded-3xl p-6 w-full max-w-2xl shadow-2xl animate-in fade-in zoom-in duration-200 max-h-[90vh] flex flex-col">

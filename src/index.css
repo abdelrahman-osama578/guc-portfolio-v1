@@ -137,3 +137,12 @@ body {
   opacity: 0; /* Hide initially until animation starts */
   animation: cardDeal 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Hide scrollbar for small internal lists */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { Folder, Users, Code, ArrowUpRight, Star, Briefcase, BarChart3, BookOpen, ShieldAlert, Award, TrendingUp, ChevronRight, Activity, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import TiltCard from '../../components/common/TiltCard';
+import TiltCard from '../../components/common/TiltCard'
 
 const DashboardHome = () => {
   const { currentUser } = useAuth();
@@ -16,7 +16,7 @@ const DashboardHome = () => {
       case 'Administrator': return 'bg-gradient-to-br from-slate-900 via-gray-800 to-slate-900';
       case 'Employer': return 'bg-gradient-to-br from-blue-900 to-indigo-900';
       case 'Course Instructor': return 'bg-gradient-to-br from-teal-800 to-emerald-900';
-      default: return 'bg-gradient-to-br from-blue-700 to-cyan-600'; 
+      default: return 'bg-gradient-to-br from-blue-700 to-cyan-600'; // Student
     }
   };
 
@@ -49,7 +49,6 @@ const DashboardHome = () => {
   const isEmployer = currentUser?.role === 'Employer';
   const isAdmin = currentUser?.role === 'Administrator';
 
-  // targetInternships pulls Company specific for Employer, and ALL for Admin
   const targetInternships = isEmployer ? internships.filter(i => i.companyName === currentUser?.companyName) : internships;
   const totalOffered = targetInternships.length;
   const totalHiredStudents = applications.filter(app => app.status === 'accepted' && targetInternships.some(i => i.id === app.internshipId)).length;
@@ -72,100 +71,132 @@ const DashboardHome = () => {
     .sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 3);
 
   return (
-    <div className="space-y-6 pb-24"> {/* Ghost Scrollbar fix */}
+    <div className="space-y-6 pb-12">
 
+      {/* ================= TOP STATS ROW ================= */}
       <div className={`grid grid-cols-1 md:grid-cols-3 ${isAdmin ? 'xl:grid-cols-5' : ''} gap-6`}>
         {currentUser?.role === 'Student' && (
           <>
-            <TiltCard delay={0} className="glass-card bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-blue-200 transition-colors group relative overflow-hidden">
-              <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">01</span>
-              <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Total Projects</p><h3 className="text-3xl font-bold text-primary">{userProjects.length}</h3></div>
-              <Folder className="w-8 h-8 text-blue-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+            <TiltCard enableTilt={true} className="glass-card bg-surface rounded-2xl shadow-sm border border-gray-100 group overflow-hidden">
+              <div className="p-6 flex items-center justify-between h-full relative z-10 hover:border-blue-200 transition-colors">
+                <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">01</span>
+                <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Total Projects</p><h3 className="text-3xl font-bold text-primary">{userProjects.length}</h3></div>
+                <Folder className="w-8 h-8 text-blue-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+              </div>
             </TiltCard>
-            <TiltCard delay={100} className="glass-card bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-green-200 transition-colors group relative overflow-hidden">
-              <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">02</span>
-              <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Collaborations</p><h3 className="text-3xl font-bold text-primary">{activeCollaborations}</h3></div>
-              <Users className="w-8 h-8 text-green-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+            <TiltCard enableTilt={true} className="glass-card bg-surface rounded-2xl shadow-sm border border-gray-100 group overflow-hidden">
+              <div className="p-6 flex items-center justify-between h-full relative z-10 hover:border-green-200 transition-colors">
+                <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">02</span>
+                <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Collaborations</p><h3 className="text-3xl font-bold text-primary">{activeCollaborations}</h3></div>
+                <Users className="w-8 h-8 text-green-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+              </div>
             </TiltCard>
-            <TiltCard delay={200} className="glass-card bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-purple-200 transition-colors group relative overflow-hidden">
-              <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">03</span>
-              <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Top Language</p><h3 className="text-2xl font-bold text-primary truncate max-w-[120px]">{languageStats.top}</h3></div>
-              <Code className="w-8 h-8 text-purple-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+            <TiltCard enableTilt={true} className="glass-card bg-surface rounded-2xl shadow-sm border border-gray-100 group overflow-hidden">
+              <div className="p-6 flex items-center justify-between h-full relative z-10 hover:border-purple-200 transition-colors">
+                <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">03</span>
+                <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Top Language</p><h3 className="text-2xl font-bold text-primary truncate max-w-[120px]">{languageStats.top}</h3></div>
+                <Code className="w-8 h-8 text-purple-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+              </div>
             </TiltCard>
           </>
         )}
 
         {isEmployer && (
           <>
-            <TiltCard delay={0} className="glass-card bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-orange-200 transition-colors group relative overflow-hidden">
-              <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">01</span>
-              <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Internships</p><h3 className="text-3xl font-bold text-primary">{totalOffered}</h3></div>
-              <Briefcase className="w-8 h-8 text-orange-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+            <TiltCard enableTilt={true} className="glass-card bg-surface rounded-2xl shadow-sm border border-gray-100 group overflow-hidden">
+              <div className="p-6 flex items-center justify-between h-full relative z-10 hover:border-orange-200 transition-colors">
+                <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">01</span>
+                <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Internships</p><h3 className="text-3xl font-bold text-primary">{totalOffered}</h3></div>
+                <Briefcase className="w-8 h-8 text-orange-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+              </div>
             </TiltCard>
-            <TiltCard delay={100} className="glass-card bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-green-200 transition-colors group relative overflow-hidden">
-              <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">02</span>
-              <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Hired</p><h3 className="text-3xl font-bold text-primary">{totalHiredStudents}</h3></div>
-              <Award className="w-8 h-8 text-green-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+            <TiltCard enableTilt={true} className="glass-card bg-surface rounded-2xl shadow-sm border border-gray-100 group overflow-hidden">
+              <div className="p-6 flex items-center justify-between h-full relative z-10 hover:border-green-200 transition-colors">
+                <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">02</span>
+                <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Hired</p><h3 className="text-3xl font-bold text-primary">{totalHiredStudents}</h3></div>
+                <Award className="w-8 h-8 text-green-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+              </div>
             </TiltCard>
-            <TiltCard delay={200} className="glass-card bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-blue-200 transition-colors group relative overflow-hidden">
-              <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">03</span>
-              <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Applications</p><h3 className="text-3xl font-bold text-primary">{applications.filter(a => targetInternships.some(i => i.id === a.internshipId)).length}</h3></div>
-              <BarChart3 className="w-8 h-8 text-blue-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+            <TiltCard enableTilt={true} className="glass-card bg-surface rounded-2xl shadow-sm border border-gray-100 group overflow-hidden">
+              <div className="p-6 flex items-center justify-between h-full relative z-10 hover:border-blue-200 transition-colors">
+                <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">03</span>
+                <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Applications</p><h3 className="text-3xl font-bold text-primary">{applications.filter(a => targetInternships.some(i => i.id === a.internshipId)).length}</h3></div>
+                <BarChart3 className="w-8 h-8 text-blue-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+              </div>
             </TiltCard>
           </>
         )}
 
         {isAdmin && (
           <>
-            <TiltCard delay={0} className="glass-card bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-blue-200 transition-colors">
-              <div className="relative z-10"><p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Users</p><h3 className="text-2xl md:text-3xl font-bold text-primary">{users.length}</h3></div>
-              <Users className="w-6 h-6 md:w-8 md:h-8 text-blue-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+            <TiltCard enableTilt={true} className="glass-card bg-surface rounded-2xl shadow-sm border border-gray-100 group overflow-hidden">
+              <div className="p-6 flex items-center justify-between h-full relative z-10 hover:border-blue-200 transition-colors">
+                <div className="relative z-10"><p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Users</p><h3 className="text-2xl md:text-3xl font-bold text-primary">{users.length}</h3></div>
+                <Users className="w-6 h-6 md:w-8 md:h-8 text-blue-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+              </div>
             </TiltCard>
-            <TiltCard delay={100} className="glass-card bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-purple-200 transition-colors">
-              <div className="relative z-10"><p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Projects</p><h3 className="text-2xl md:text-3xl font-bold text-primary">{projects.length}</h3></div>
-              <Folder className="w-6 h-6 md:w-8 md:h-8 text-purple-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+            <TiltCard enableTilt={true} className="glass-card bg-surface rounded-2xl shadow-sm border border-gray-100 group overflow-hidden">
+              <div className="p-6 flex items-center justify-between h-full relative z-10 hover:border-purple-200 transition-colors">
+                <div className="relative z-10"><p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Projects</p><h3 className="text-2xl md:text-3xl font-bold text-primary">{projects.length}</h3></div>
+                <Folder className="w-6 h-6 md:w-8 md:h-8 text-purple-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+              </div>
             </TiltCard>
-            <TiltCard delay={200} className="glass-card bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-green-200 transition-colors">
-              <div className="relative z-10"><p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Courses</p><h3 className="text-2xl md:text-3xl font-bold text-primary">{courses.length}</h3></div>
-              <BookOpen className="w-6 h-6 md:w-8 md:h-8 text-green-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+            <TiltCard enableTilt={true} className="glass-card bg-surface rounded-2xl shadow-sm border border-gray-100 group overflow-hidden">
+              <div className="p-6 flex items-center justify-between h-full relative z-10 hover:border-green-200 transition-colors">
+                <div className="relative z-10"><p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Courses</p><h3 className="text-2xl md:text-3xl font-bold text-primary">{courses.length}</h3></div>
+                <BookOpen className="w-6 h-6 md:w-8 md:h-8 text-green-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+              </div>
             </TiltCard>
-            <TiltCard delay={300} className="glass-card bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-orange-200 transition-colors">
-              <div className="relative z-10"><p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Internships</p><h3 className="text-2xl md:text-3xl font-bold text-primary">{totalOffered}</h3></div>
-              <Briefcase className="w-6 h-6 md:w-8 md:h-8 text-orange-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+            <TiltCard enableTilt={true} className="glass-card bg-surface rounded-2xl shadow-sm border border-gray-100 group overflow-hidden">
+              <div className="p-6 flex items-center justify-between h-full relative z-10 hover:border-orange-200 transition-colors">
+                <div className="relative z-10"><p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Internships</p><h3 className="text-2xl md:text-3xl font-bold text-primary">{totalOffered}</h3></div>
+                <Briefcase className="w-6 h-6 md:w-8 md:h-8 text-orange-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+              </div>
             </TiltCard>
-            <TiltCard delay={400} className="glass-card bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-yellow-200 transition-colors">
-              <div className="relative z-10"><p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Hired</p><h3 className="text-2xl md:text-3xl font-bold text-primary">{totalHiredStudents}</h3></div>
-              <Award className="w-6 h-6 md:w-8 md:h-8 text-yellow-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+            <TiltCard enableTilt={true} className="glass-card bg-surface rounded-2xl shadow-sm border border-gray-100 group overflow-hidden">
+              <div className="p-6 flex items-center justify-between h-full relative z-10 hover:border-yellow-200 transition-colors">
+                <div className="relative z-10"><p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Hired</p><h3 className="text-2xl md:text-3xl font-bold text-primary">{totalHiredStudents}</h3></div>
+                <Award className="w-6 h-6 md:w-8 md:h-8 text-yellow-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+              </div>
             </TiltCard>
           </>
         )}
 
         {currentUser?.role === 'Course Instructor' && (
           <>
-            <TiltCard delay={0} className="glass-card bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-purple-200 transition-colors relative overflow-hidden">
-              <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">01</span>
-              <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Courses</p><h3 className="text-3xl font-bold text-primary">{currentUser?.linkedCourses?.length || 0}</h3></div>
-              <BookOpen className="w-8 h-8 text-purple-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+            <TiltCard enableTilt={true} className="glass-card bg-surface rounded-2xl shadow-sm border border-gray-100 group overflow-hidden">
+              <div className="p-6 flex items-center justify-between h-full relative z-10 hover:border-purple-200 transition-colors">
+                <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">01</span>
+                <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Courses</p><h3 className="text-3xl font-bold text-primary">{currentUser?.linkedCourses?.length || 0}</h3></div>
+                <BookOpen className="w-8 h-8 text-purple-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+              </div>
             </TiltCard>
-            <TiltCard delay={100} className="glass-card bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-blue-200 transition-colors relative overflow-hidden">
-              <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">02</span>
-              <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Projects</p><h3 className="text-3xl font-bold text-primary">{projects.length}</h3></div>
-              <Folder className="w-8 h-8 text-blue-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+            <TiltCard enableTilt={true} className="glass-card bg-surface rounded-2xl shadow-sm border border-gray-100 group overflow-hidden">
+              <div className="p-6 flex items-center justify-between h-full relative z-10 hover:border-blue-200 transition-colors">
+                <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">02</span>
+                <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Projects</p><h3 className="text-3xl font-bold text-primary">{projects.length}</h3></div>
+                <Folder className="w-8 h-8 text-blue-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+              </div>
             </TiltCard>
-            <TiltCard delay={200} className="glass-card bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-yellow-200 transition-colors relative overflow-hidden">
-              <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">03</span>
-              <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Invites</p><h3 className="text-3xl font-bold text-primary">{invitations.filter(i => i.receiverId === currentUser.id && i.status === 'pending' && !i.type).length}</h3></div>
-              <Star className="w-8 h-8 text-yellow-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+            <TiltCard enableTilt={true} className="glass-card bg-surface rounded-2xl shadow-sm border border-gray-100 group overflow-hidden">
+              <div className="p-6 flex items-center justify-between h-full relative z-10 hover:border-yellow-200 transition-colors">
+                <span className="absolute -right-2 -bottom-6 text-8xl font-black text-gray-50 opacity-60 pointer-events-none select-none z-0 tracking-tighter">03</span>
+                <div className="relative z-10"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Invites</p><h3 className="text-3xl font-bold text-primary">{invitations.filter(i => i.receiverId === currentUser.id && i.status === 'pending' && !i.type).length}</h3></div>
+                <Star className="w-8 h-8 text-yellow-500 opacity-80 group-hover:opacity-100 transition-opacity relative z-10" />
+              </div>
             </TiltCard>
           </>
         )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* ================= LEFT COLUMN (WIDER) ================= */}
         <div className="lg:col-span-2 space-y-6 flex flex-col">
 
           {currentUser?.role === 'Student' && (
             <>
+              {/* My Applications */}
               <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xl font-bold text-primary flex items-center"><Briefcase className="w-5 h-5 mr-2 text-blue-600" /> My Applications</h3>
@@ -174,14 +205,18 @@ const DashboardHome = () => {
                   </Link>
                 </div>
 
-                <div className="flex gap-4 overflow-x-auto pb-2 snap-x">
+                {/* FIXED: Bleed Padding applied to absorb 3D hover scale seamlessly */}
+                <div className="flex gap-4 overflow-x-auto p-4 -m-4 snap-x no-scrollbar">
                   {myApplications.length > 0 ? (
-                    myApplications.map((app, index) => {
+                    myApplications.map(app => {
                       const internship = internships.find(i => i.id === app.internshipId);
                       if (!internship) return null;
                       return (
-                        <TiltCard delay={index * 100} key={app.id}>
-                          <Link to="/internships" className="glass-card min-w-[280px] p-5 border border-gray-100 rounded-xl hover:shadow-md hover:border-blue-200 transition-all bg-gray-50 hover:bg-white snap-start flex flex-col justify-between group cursor-pointer block h-full">
+                        <TiltCard enableTilt={true} key={app.id} className="min-w-[280px]">
+                          <Link
+                            to="/internships"
+                            className="glass-card border border-gray-100 rounded-xl hover:shadow-md hover:border-blue-200 transition-all bg-gray-50 hover:bg-white snap-start flex flex-col justify-between group cursor-pointer h-full p-5 relative z-10"
+                          >
                             <div className="relative z-10">
                               <h4 className="font-bold text-primary text-sm truncate group-hover:text-blue-600 transition-colors">{internship.title}</h4>
                               <p className="text-xs font-bold text-blue-600 mt-1">{internship.companyName}</p>
@@ -203,23 +238,25 @@ const DashboardHome = () => {
                 </div>
               </div>
 
+              {/* Recent Projects (Scrollable list) */}
               <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex-1">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xl font-bold text-primary flex items-center"><Folder className="w-5 h-5 mr-2 text-blue-600" /> Recent Projects</h3>
-                  {/* This one is correct to stay as /projects because it is next to YOUR recent projects! */}
-                  <Link to="/projects" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors flex items-center">View all <ArrowUpRight className="w-4 h-4 ml-1" /></Link>                </div>
+                  <Link to="/projects" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors flex items-center">View all <ArrowUpRight className="w-4 h-4 ml-1" /></Link>
+                </div>
 
-                <div className="max-h-80 overflow-y-auto pr-2 space-y-3">
+                {/* FIXED: Bleed Padding applied for vertical scrolling */}
+                <div className="max-h-80 overflow-y-auto p-4 -m-4 space-y-3 no-scrollbar">
                   {userProjects.length > 0 ? (
-                    userProjects.slice().reverse().map((project, index) => (
-                      <TiltCard delay={index * 50} key={project.id}>
-                        <div className="group flex items-center justify-between p-4 bg-white hover:bg-gray-50 rounded-xl transition-colors border border-gray-100 hover:border-blue-100">
+                    userProjects.slice().reverse().map(project => (
+                      <TiltCard enableTilt={true} key={project.id}>
+                        <div className="group flex items-center justify-between p-4 bg-white hover:bg-gray-50 rounded-xl transition-colors border border-gray-100 hover:border-blue-100 hover:shadow-sm relative z-10">
                           <div className="flex items-center space-x-4">
                             <div className="text-gray-400 group-hover:text-blue-600 transition-colors">
                               {project.creatorId === currentUser?.id ? <Folder className="w-6 h-6" /> : <Users className="w-6 h-6" />}
                             </div>
                             <div>
-                              <Link to={`/projects/${project.id}`}><h4 className="font-bold text-primary hover:text-blue-600 transition-colors text-sm">{project.title}</h4></Link>
+                              <Link to={`/projects/${project.id}`} className="relative z-10"><h4 className="font-bold text-primary hover:text-blue-600 transition-colors text-sm">{project.title}</h4></Link>
                               <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider">{project.creationDate}</p>
                             </div>
                           </div>
@@ -241,14 +278,14 @@ const DashboardHome = () => {
                 <h3 className="text-lg font-bold text-primary flex items-center"><Briefcase className="w-5 h-5 mr-2 text-blue-600" /> Active Job Postings</h3>
                 <Link to="/manage-applicants" className="text-xs font-bold text-gray-500 hover:text-blue-600 transition-all">View all</Link>
               </div>
-              <div className="flex gap-4 overflow-x-auto pb-2 snap-x">
-                {targetInternships.slice(0, 3).length > 0 ? targetInternships.slice(0, 3).map((internship, index) => (
-                  <TiltCard delay={index * 100} key={internship.id}>
-                    <div className="glass-card min-w-[280px] p-5 border border-gray-100 rounded-xl hover:shadow-md transition-shadow bg-gray-50 snap-start block h-full overflow-hidden">
+              <div className="flex gap-4 overflow-x-auto p-4 -m-4 snap-x no-scrollbar">
+                {targetInternships.slice(0, 3).length > 0 ? targetInternships.slice(0, 3).map(internship => (
+                  <TiltCard enableTilt={true} key={internship.id} className="min-w-[280px]">
+                    <div className="glass-card p-5 border border-gray-100 rounded-xl hover:shadow-md transition-shadow bg-gray-50 snap-start block h-full overflow-hidden relative z-10">
                       <div className="relative z-10">
                         <h4 className="font-bold text-primary text-sm truncate">{internship.title}</h4>
                         <p className="text-xs text-gray-500 mt-1 flex items-center"><Activity className="w-3 h-3 mr-1" /> Deadline: {internship.deadline}</p>
-                        <Link to="/manage-applicants" className="mt-4 text-xs font-bold text-blue-600 hover:underline flex items-center">
+                        <Link to="/manage-applicants" className="mt-4 text-xs font-bold text-blue-600 hover:underline flex items-center relative z-10">
                           Manage Applicants <ChevronRight className="w-3 h-3 ml-1" />
                         </Link>
                       </div>
@@ -263,10 +300,10 @@ const DashboardHome = () => {
             <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
               <h3 className="text-xl font-bold text-primary mb-6 flex items-center"><ShieldAlert className="w-5 h-5 mr-2 text-blue-600" /> Platform Demographics</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <TiltCard delay={0} className="p-4 bg-gray-50 border border-gray-100 rounded-2xl text-center"><p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Students</p><p className="text-2xl font-bold text-primary">{getRoleCount('Student')}</p></TiltCard>
-                <TiltCard delay={100} className="p-4 bg-gray-50 border border-gray-100 rounded-2xl text-center"><p className="text-xs font-bold text-purple-600 uppercase tracking-widest mb-1">Instructors</p><p className="text-2xl font-bold text-primary">{getRoleCount('Course Instructor')}</p></TiltCard>
-                <TiltCard delay={200} className="p-4 bg-gray-50 border border-gray-100 rounded-2xl text-center"><p className="text-xs font-bold text-orange-600 uppercase tracking-widest mb-1">Employers</p><p className="text-2xl font-bold text-primary">{getRoleCount('Employer')}</p></TiltCard>
-                <TiltCard delay={300} className="p-4 bg-gray-50 border border-gray-100 rounded-2xl text-center"><p className="text-xs font-bold text-red-600 uppercase tracking-widest mb-1">Admins</p><p className="text-2xl font-bold text-primary">{getRoleCount('Administrator')}</p></TiltCard>
+                <TiltCard enableTilt={true} className="p-4 bg-gray-50 border border-gray-100 rounded-2xl text-center"><div className="h-full relative z-10"><p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Students</p><p className="text-2xl font-bold text-primary">{getRoleCount('Student')}</p></div></TiltCard>
+                <TiltCard enableTilt={true} className="p-4 bg-gray-50 border border-gray-100 rounded-2xl text-center"><div className="h-full relative z-10"><p className="text-xs font-bold text-purple-600 uppercase tracking-widest mb-1">Instructors</p><p className="text-2xl font-bold text-primary">{getRoleCount('Course Instructor')}</p></div></TiltCard>
+                <TiltCard enableTilt={true} className="p-4 bg-gray-50 border border-gray-100 rounded-2xl text-center"><div className="h-full relative z-10"><p className="text-xs font-bold text-orange-600 uppercase tracking-widest mb-1">Employers</p><p className="text-2xl font-bold text-primary">{getRoleCount('Employer')}</p></div></TiltCard>
+                <TiltCard enableTilt={true} className="p-4 bg-gray-50 border border-gray-100 rounded-2xl text-center"><div className="h-full relative z-10"><p className="text-xs font-bold text-red-600 uppercase tracking-widest mb-1">Admins</p><p className="text-2xl font-bold text-primary">{getRoleCount('Administrator')}</p></div></TiltCard>
               </div>
             </div>
           )}
@@ -288,7 +325,6 @@ const DashboardHome = () => {
                   </div>
                 )}
               </div>
-
               <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6 h-48 flex items-end gap-2">
                 {chartLabels.length === 0 ? (
                   <p className="text-sm text-gray-500 w-full text-center pb-4 italic">No internship data available over time.</p>
@@ -314,11 +350,11 @@ const DashboardHome = () => {
           {currentUser?.role === 'Course Instructor' && (
             <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex-1">
               <h3 className="text-xl font-bold text-primary mb-6 flex items-center"><Folder className="w-5 h-5 text-purple-600 mr-2" /> Projects in Your Courses</h3>
-              <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
+              <div className="max-h-80 overflow-y-auto p-4 -m-4 space-y-3 no-scrollbar">
                 {projects.filter(p => currentUser.linkedCourses?.includes(courses.find(c => c.id === p.courseId)?.code)).length > 0 ?
-                  projects.filter(p => currentUser.linkedCourses?.includes(courses.find(c => c.id === p.courseId)?.code)).map((proj, index) => (
-                    <TiltCard delay={index * 50} key={proj.id}>
-                      <Link to={`/projects/${proj.id}`} className="block p-4 border border-gray-100 rounded-xl hover:bg-purple-50 hover:border-purple-200 transition-colors">
+                  projects.filter(p => currentUser.linkedCourses?.includes(courses.find(c => c.id === p.courseId)?.code)).map(proj => (
+                    <TiltCard enableTilt={true} key={proj.id} className="bg-white rounded-xl transition-colors border border-gray-100 hover:border-purple-200 hover:shadow-sm">
+                      <Link to={`/projects/${proj.id}`} className="block p-4 h-full relative z-10">
                         <div className="flex justify-between items-start mb-1">
                           <h4 className="font-bold text-sm text-primary hover:text-purple-700 line-clamp-1">{proj.title}</h4>
                           <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ml-2 ${proj.visibility === 'public' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}>{proj.visibility}</span>
@@ -334,6 +370,7 @@ const DashboardHome = () => {
             </div>
           )}
 
+          {/* Recommended Projects */}
           {['Student', 'Employer', 'Course Instructor'].includes(currentUser?.role) && (
             <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-4">
@@ -341,18 +378,20 @@ const DashboardHome = () => {
                 <Link to="/explore" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors flex items-center">View all</Link>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {recommendedProjects.length > 0 ? recommendedProjects.map((proj, index) => {
+                {recommendedProjects.length > 0 ? recommendedProjects.map(proj => {
                   const creator = users.find(u => u.id === proj.creatorId);
                   return (
-                    <TiltCard delay={index * 100} key={proj.id} className="p-4 border border-gray-100 rounded-xl hover:shadow-md transition-all bg-white flex flex-col h-full">
-                      <div className="flex items-center gap-2 mb-3 relative z-10">
-                        <img src={creator?.profilePic} alt="" className="w-6 h-6 rounded-full" />
-                        <p className="text-xs font-bold text-gray-600 truncate">{creator?.firstName} {creator?.lastName}</p>
+                    <TiltCard enableTilt={true} key={proj.id} className="bg-white rounded-xl border border-gray-100 hover:shadow-md transition-all">
+                      <div className="p-4 flex flex-col h-full relative z-10">
+                        <div className="flex items-center gap-2 mb-3 relative z-10">
+                          <img src={creator?.profilePic} alt="" className="w-6 h-6 rounded-full" />
+                          <p className="text-xs font-bold text-gray-600 truncate">{creator?.firstName} {creator?.lastName}</p>
+                        </div>
+                        <h4 className="font-bold text-primary text-sm line-clamp-2 mb-4 flex-1 relative z-10">{proj.title}</h4>
+                        <Link to={`/projects/${proj.id}`} className="block text-center text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-100 py-2 rounded-lg transition-colors relative z-10">
+                          View Details
+                        </Link>
                       </div>
-                      <h4 className="font-bold text-primary text-sm line-clamp-2 mb-4 flex-1 relative z-10">{proj.title}</h4>
-                      <Link to={`/projects/${proj.id}`} className="block text-center text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-100 py-2 rounded-lg transition-colors relative z-10">
-                        View Details
-                      </Link>
                     </TiltCard>
                   );
                 }) : <p className="text-sm text-gray-500 italic col-span-3">No public projects available to recommend.</p>}
@@ -362,7 +401,7 @@ const DashboardHome = () => {
 
         </div>
 
-        {/* ================= RIGHT COLUMN ================= */}
+        {/* ================= RIGHT COLUMN (NARROWER) ================= */}
         <div className="space-y-6">
 
           <div className="bg-surface rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -440,10 +479,10 @@ const DashboardHome = () => {
                 <Link to="/portfolios" className="text-[10px] font-bold text-gray-400 hover:text-blue-600 transition-all">Directory</Link>
               </div>
 
-              <div className="max-h-60 overflow-y-auto pr-2 space-y-1">
-                {topCollaborators.length > 0 ? topCollaborators.map((c, index) => (
-                  <TiltCard delay={index * 50} key={c.user.id}>
-                    <Link to={`/portfolios/${c.user.id}`} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-xl transition-colors border border-transparent hover:border-gray-200 relative z-10">
+              <div className="max-h-60 overflow-y-auto p-4 -m-4 space-y-1 no-scrollbar">
+                {topCollaborators.length > 0 ? topCollaborators.map(c => (
+                  <TiltCard enableTilt={true} key={c.user.id} className="rounded-xl transition-colors border border-transparent hover:border-gray-200 hover:bg-gray-50">
+                    <Link to={`/portfolios/${c.user.id}`} className="flex items-center gap-3 p-2 relative z-10">
                       <img src={c.user.profilePic} alt="" className="w-8 h-8 rounded-full border border-gray-100 object-cover" />
                       <div className="flex-1">
                         <p className="text-xs font-bold text-gray-800">{c.user.firstName} {c.user.lastName}</p>

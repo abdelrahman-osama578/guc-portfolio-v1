@@ -12,7 +12,6 @@ const DashboardLayout = () => {
   const { currentUser } = useAuth();
   const location = useLocation();
 
-  // --- PARALLAX BACKGROUND TRACKING ---
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
@@ -30,7 +29,8 @@ const DashboardLayout = () => {
       case 'Administrator': return ['bg-purple-200', 'bg-indigo-200', 'bg-slate-200'];
       case 'Employer': return ['bg-orange-200', 'bg-amber-200', 'bg-gray-200'];
       case 'Course Instructor': return ['bg-emerald-200', 'bg-teal-200', 'bg-gray-200'];
-      default: return ['bg-slate-200', 'bg-gray-200', 'bg-zinc-200']; 
+      // FIXED: Gave Students back their vibrant lighting!
+      default: return ['bg-cyan-200', 'bg-blue-300', 'bg-indigo-200']; 
     }
   };
   
@@ -39,7 +39,6 @@ const DashboardLayout = () => {
   return (
     <div className="min-h-screen flex bg-background relative overflow-hidden">
       
-      {/* Parallax Drafting Pattern */}
       <div 
         className="fixed -inset-20 z-0 opacity-[0.03] pointer-events-none transition-transform duration-300 ease-out" 
         style={{ 
@@ -49,9 +48,9 @@ const DashboardLayout = () => {
         }}
       ></div>
 
-      {/* Parallax Lighting Blobs */}
+      {/* FIXED: Changed inset-0 to -inset-[100px] to prevent the image from looking cut off at the edges! */}
       <div 
-        className="fixed inset-0 z-0 pointer-events-none overflow-hidden transition-transform duration-700 ease-out"
+        className="fixed -inset-[100px] z-0 pointer-events-none overflow-hidden transition-transform duration-700 ease-out"
         style={{ transform: `translate(${mousePos.x * 40}px, ${mousePos.y * 40}px)` }}
       >
         <div className={`absolute top-[-10%] left-[-10%] w-96 h-96 ${colors[0]} rounded-full mix-blend-multiply filter blur-[120px] opacity-70 animate-blob`}></div>
@@ -61,11 +60,9 @@ const DashboardLayout = () => {
 
       <Sidebar />
       
-      {/* FIXED: Removed z-10 as per colleague's fix */}
       <div className="flex-1 flex flex-col relative">
         <Topbar />
         <main className="flex-1 ml-64 p-8 overflow-y-auto overflow-x-hidden">
-          {/* FIXED: Removed animate-page-enter as per colleague's fix to allow modals to escape */}
           <div key={location.pathname} className="w-full max-w-7xl mx-auto">
             <Outlet /> 
           </div>

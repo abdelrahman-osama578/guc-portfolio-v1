@@ -5,14 +5,11 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { Search, Heart, ExternalLink, MapPin, BookOpen, Filter, GraduationCap, Code, ArrowUpDown, Folder } from 'lucide-react';
 import TiltCard from '../../components/common/TiltCard';
-import SkeletonCard from '../../components/common/SkeletonCard';
 
 const PortfolioList = () => {
   const { users, toggleFavorite, favorites, projects, invitations } = useData();
   const { currentUser } = useAuth();
   const location = useLocation();
-
-  const [isLoading, setIsLoading] = useState(true);
 
   const [searchTerm, setSearchTerm] = useState(location.state?.searchQuery || '');
   const [roleFilter, setRoleFilter] = useState('All');
@@ -25,11 +22,7 @@ const PortfolioList = () => {
       setSearchTerm(location.state.searchQuery);
       window.history.replaceState({}, document.title);
     }
-
-    setIsLoading(true);
-    const timer = setTimeout(() => setIsLoading(false), 800);
-    return () => clearTimeout(timer);
-  }, [location.state, location.pathname]);
+  }, [location.state]);
 
   const availableTabs = currentUser?.role === 'Student'
     ? ['All', 'Student', 'Collaborator', 'Course Instructor']
@@ -160,36 +153,31 @@ const PortfolioList = () => {
         </div>
       </div>
 
-      {sortedUsers.length === 0 && !isLoading ? (
+      {sortedUsers.length === 0 ? (
         <div className="bg-surface border border-dashed border-gray-300 rounded-3xl p-16 text-center text-gray-500">
           No users match your criteria.
           <button onClick={() => { setSearchTerm(''); setMajorFilter(''); setSkillFilter(''); setSortOption('projects_highest'); }} className="block mx-auto mt-3 text-sm text-blue-600 hover:underline font-bold">Clear all filters</button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {isLoading ? (
-            <>
-               {[1, 2, 3, 4, 5, 6, 7, 8].map(num => <SkeletonCard key={num} />)}
-            </>
-          ) : (
-            sortedUsers.map((user, index) => {
-              const isFav = favorites.some(f => f.userId === currentUser?.id && f.itemId === user.id && f.type === 'portfolio');
-              const displayName = user.role === 'Employer' ? user.companyName : `${user.firstName} ${user.lastName}`;
-              const hasSubInfo = user.major || user.address || (user.role === 'Course Instructor' && user.linkedCourses?.length > 0);
-              const projectCount = getProjectCount(user.id);
+          {sortedUsers.map((user, index) => {
+            const isFav = favorites.some(f => f.userId === currentUser?.id && f.itemId === user.id && f.type === 'portfolio');
+            const displayName = user.role === 'Employer' ? user.companyName : `${user.firstName} ${user.lastName}`;
+            const hasSubInfo = user.major || user.address || (user.role === 'Course Instructor' && user.linkedCourses?.length > 0);
+            const projectCount = getProjectCount(user.id);
 
-              return (
-                <TiltCard 
-                  key={user.id} 
-                  delay={index * 100}
-                  className="glass-card bg-surface rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md flex flex-col group relative"
-                >
-
-                  <div className="h-16 bg-gradient-to-r from-gray-100 to-gray-200 relative">
+            return (
+              <TiltCard 
+                key={user.id} 
+                delay={index * 100}
+                className="h-full glass-card bg-surface rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md group relative"
+              >
+                <div className="flex flex-col h-full relative z-10">
+                  <div className="h-16 bg-gradient-to-r from-gray-100 to-gray-200 relative shrink-0">
                     {currentUser && currentUser.id !== user.id && (
                       <button
                         onClick={(e) => { e.preventDefault(); toggleFavorite(currentUser.id, user.id, 'portfolio'); }}
-                        className="animate-pop absolute top-3 right-3 p-2 rounded-full bg-white shadow-sm transition-all hover:scale-110 z-20 group/btn"
+                        className="animate-pop absolute top-3 right-3 p-2 rounded-full bg-white shadow-sm transition-all hover:scale-110 hover:shadow-md z-20 group/btn"
                         title={isFav ? "Unlike Portfolio" : "Like Portfolio"}
                       >
                         <Heart className={`w-4 h-4 transition-colors ${isFav ? 'fill-red-500 text-red-500' : 'text-gray-400 group-hover/btn:text-red-400'}`} />
@@ -197,7 +185,7 @@ const PortfolioList = () => {
                     )}
                   </div>
 
-                  <div className="px-5 pb-5 pt-0 relative flex-1 flex flex-col">
+                  <div className="px-5 pb-5 pt-0 flex-1 flex flex-col">
                     <div className="flex justify-between items-end mb-3">
                       <div className="w-16 h-16 rounded-full border-4 border-white bg-gray-50 shadow-sm overflow-hidden -mt-8 relative z-10">
                         <img src={user.profilePic} alt={`Profile picture of ${displayName}`} className="w-full h-full object-cover" />
@@ -241,10 +229,10 @@ const PortfolioList = () => {
                       </Link>
                     </div>
                   </div>
-                </TiltCard>
-              );
-            })
-          )}
+                </div>
+              </TiltCard>
+            );
+          })}
         </div>
       )}
     </div>
